@@ -1,6 +1,6 @@
 """
-DeepSeek 网页 → API 代理（纯 HTTP 转发，无浏览器依赖）
-用法: python proxy.py → 打开 http://localhost:8000/admin → 粘贴 cURL → 保存 → 用
+DeepSeek Web → API Proxy (Pure HTTP forwarding, no browser dependency)
+Usage: python proxy.py → open http://localhost:8000/admin → paste cURL → save → use
 """
 import asyncio, json, os, shlex, time, uuid, webbrowser, base64, re, secrets
 from pathlib import Path
@@ -18,23 +18,23 @@ _enc = tiktoken.get_encoding("cl100k_base")
 def _count_tokens(text: str) -> int:
     return len(_enc.encode(text or ""))
 
-# ── 用量统计 ───────────────────────────────────
+# ── Usage Statistics ───────────────────────────────────
 from usage_store import add_usage, get_usage, clear_usage
 from session_store import needs_renewal, on_new_session, add_tokens, get_usage_status, get_expired_sessions, remove_old_session
 from response_store import save_response_record, get_response_record, delete_response_record, update_response_record
 
-# ── 工具调用处理模块 ─────────────────────────────────
+# ── Tool Call Processing Module ─────────────────────────────────
 from tool_call import (
     extract_tool_call,
     get_tool_names,
     convert_messages_for_deepseek,
 )
 
-# ── 流式筛分 + DSML 解析 ────────────────────────────
+# ── Streaming Filter + DSML Parsing ────────────────────────────
 from tool_sieve import StreamSieve, SieveEvent
 from tool_dsml import parse_dsml_tool_calls as _parse_dsml, sanitize_leaked_output
 
-# ── PoW (Proof of Work) Solver — 纯 Python 实现（无 WASM 依赖）────────
+# ── PoW (Proof of Work) Solver — Pure Python Implementation (No WASM Dependencies)────────
 from pow_native import DeepSeekPOW
 
 # Initialize PoW solver
@@ -43,12 +43,12 @@ pow_solver = DeepSeekPOW()
 BASE_DIR = Path(__file__).parent
 CONFIG_FILE = BASE_DIR / "config.json"
 
-# 多账号管理
+# Multi-Account Management
 from app.config import config_manager, DsAccount
 VISION_LOG = BASE_DIR / "vision.log"
 _DEBUG = os.getenv("DS_DEBUG", "").lower() in ("1", "true", "yes")
 
-# ── DeepSeek API 通用 Headers ─────────────────────
+# ── DeepSeek API Common Headers ─────────────────────
 DS_HEADERS = {
     "content-type": "application/json",
     "origin": "https://chat.deepseek.com",
@@ -977,7 +977,7 @@ def _response_output_from_chat_message(msg: dict) -> list[dict]:
         output.append(_response_refusal_item(refusal))
     content = msg.get("content", "")
     if isinstance(content, str) and content:
-        # 安全防护：剥除 content 中残留的 <think> 标签（SSE 解析可能遗漏）
+        # Security: Strip residual <think> tags in content (may be missed by SSE parsing)
         content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
         if content:
             output.append(_response_text_item(content))
@@ -1483,14 +1483,14 @@ app.include_router(_anthropic_router)
 
 @app.on_event("startup")
 async def startup_discover():
-    """启动时自动刷新模型列表，延迟清理过期会话（后台线程，避免风控）。"""
+    """Automatically refresh model list on startup, delay cleaning expired sessions (background thread, to avoid risk control)."""
     print("[Start] Detecting model list...")
     _discover_models()
     print("[Start] Cleaning expired sessions in background...")
     import threading
     threading.Thread(target=cleanup_old_sessions, daemon=True).start()
 
-# ── 管理页面 ─────────────────────────────────────────────
+# ── Admin Panel ─────────────────────────────────────────────
 ADMIN = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1575,7 +1575,7 @@ a{color:#7dd3fc}
 <body>
 <div class="c">
 <h1>DeepSeek Proxy</h1>
-<div id="s" class="s no"><span id="sd" class="d dy"></span><span id="st">等待配置</span></div>
+<div id="s" class="s no"><span id="sd" class="d dy"></span><span id="st">Waiting for configuration</span></div>
 
 <div class="tab-bar">
 <div class="tab active" onclick="switchTab('phone')">Phone</div>
@@ -1604,8 +1604,8 @@ a{color:#7dd3fc}
 <div id="apiSection">
 <div class="collapse" onclick="toggleCurl()">Advanced: Manually paste cURL ▾</div>
 <div class="curl-box" id="curlBox">
-<textarea id="curl" placeholder="粘贴 cURL ..." style="width:100%;height:120px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:12px;font-family:monospace;font-size:11px;resize:vertical;margin-top:8px"></textarea>
-<button class="btn bp" id="btn3" onclick="saveCurl()" style="margin-top:8px">保存 cURL</button>
+<textarea id="curl" placeholder="Paste cURL ..." style="width:100%;height:120px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:12px;font-family:monospace;font-size:11px;resize:vertical;margin-top:8px"></textarea>
+<button class="btn bp" id="btn3" onclick="saveCurl()" style="margin-top:8px">Save cURL</button>
 </div>
 
 <hr>
@@ -1658,73 +1658,73 @@ if(type==='accounts')loadAccounts();
 }
 async function cs(){
 try{const r=await fetch('/api/config');const d=await r.json()
-if(d.configured){Q('s').className='s ok';Q('sd').className='d dg';Q('st').textContent='已配置 | '+d.masked}
-else{Q('s').className='s no';Q('sd').className='d dy';Q('st').textContent=d.error||'等待配置'}
-}catch(e){Q('s').className='s err';Q('st').textContent='连接失败'}
+if(d.configured){Q('s').className='s ok';Q('sd').className='d dg';Q('st').textContent='Configured | '+d.masked}
+else{Q('s').className='s no';Q('sd').className='d dy';Q('st').textContent=d.error||'Awaiting Configuration'}
+}catch(e){Q('s').className='s err';Q('st').textContent='Connection Failed'}
 }
 async function doLogin(type){
 let body={}
 if(type==='phone'){
 const m=Q('mobile').value.trim();const p=Q('pw1').value;const a=Q('area_code').value.trim()
-if(!m||!p){t('请输入手机号和密码',1);return}
+if(!m||!p){t('Please enter phone number and password',1);return}
 body={mobile:m,password:p,area_code:a,login_type:'phone'}
 var btn=Q('btn1')
 }else{
 const e=Q('email').value.trim();const p=Q('pw2').value
-if(!e||!p){t('请输入邮箱和密码',1);return}
+if(!e||!p){t('Please enter email and password',1);return}
 body={email:e,password:p,login_type:'email'}
 var btn=Q('btn2')
 }
-btn.disabled=true;btn.textContent='登录中...'
-Q('info').style.display='block';Q('info').innerHTML='正在登录 DeepSeek...'
+btn.disabled=true;btn.textContent='**Logging in**...'
+Q('info').style.display='block';Q('info').innerHTML='Authenticating DeepSeek...'
 try{
 const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
 const d=await r.json()
-if(d.ok){Q('info').innerHTML='登录成功 | Token: '+d.masked+' | Session: '+d.session_id;t('登录成功');cs()}
-else{Q('info').innerHTML='失败: '+d.error;t(d.error,1)}
-}catch(e){Q('info').innerHTML='错误: '+e.message;t(e.message,1)}
-btn.disabled=false;btn.textContent='登录'
+if(d.ok){Q('info').innerHTML='Login successful | Token: '+d.masked+' | Session: '+d.session_id;t('Login successful');cs()}
+else{Q('info').innerHTML='Failed: '+d.error;t(d.error,1)}
+}catch(e){Q('info').innerHTML='Error: '+e.message;t(e.message,1)}
+btn.disabled=false;btn.textContent='Login'
 }
 function toggleCurl(){const b=Q('curlBox');b.style.display=b.style.display==='block'?'none':'block'}
 async function saveCurl(){
-const c=Q('curl').value.trim();if(!c){t('请先粘贴 cURL',1);return}
-const b=Q('btn3');b.disabled=true;b.textContent='保存中...'
-Q('info').style.display='block';Q('info').innerHTML='解析中...'
+const c=Q('curl').value.trim();if(!c){t('Please paste first cURL',1);return}
+const b=Q('btn3');b.disabled=true;b.textContent='Saving...'
+Q('info').style.display='block';Q('info').innerHTML='Parsing...'
 try{
 const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({curl:c})})
 const d=await r.json()
-if(d.ok){Q('info').innerHTML='OK | '+d.masked+' | Session '+d.session_id;t('已保存');cs()}
-else{Q('info').innerHTML='失败: '+d.error;t(d.error,1)}
-}catch(e){Q('info').innerHTML='错误: '+e.message;t(e.message,1)}
-b.disabled=false;b.textContent='保存 cURL'
+if(d.ok){Q('info').innerHTML='OK | '+d.masked+' | Session '+d.session_id;t('Saved');cs()}
+else{Q('info').innerHTML='Failed: '+d.error;t(d.error,1)}
+}catch(e){Q('info').innerHTML='Error: '+e.message;t(e.message,1)}
+b.disabled=false;b.textContent='Save cURL'
 }
-function cp(el){navigator.clipboard.writeText(el.textContent);t('已复制')}
+function cp(el){navigator.clipboard.writeText(el.textContent);t('Copied')}
 function t(m,e){const x=Q('toast');x.textContent=m;x.className='toast t'+(e?'e':'s');setTimeout(()=>x.className='toast',2500)}
 async function refreshModels(){
 const btn=Q('refreshBtn');const info=Q('modelsInfo')
-btn.disabled=true;btn.textContent='刷新中...';info.style.display='none'
+btn.disabled=true;btn.textContent='Refreshing...';info.style.display='none'
 try{
 const r=await fetch('/v1/models/refresh',{method:'POST'})
 const d=await r.json()
 const names=d.data.map(m=>m.id).join(', ')
-info.style.display='block';info.innerHTML='✅ 发现 '+d.data.length+' 个模型: '+names;t('刷新成功')
-}catch(e){info.style.display='block';info.innerHTML='❌ 失败: '+e.message;t('刷新失败',1)}
-btn.disabled=false;btn.textContent='🔄 刷新模型列表'
+info.style.display='block';info.innerHTML='✅ Discover '+d.data.length+' model(s): '+names;t('Refresh successful')
+}catch(e){info.style.display='block';info.innerHTML='❌ Failed: '+e.message;t('Refresh failed',1)}
+btn.disabled=false;btn.textContent='🔄 Refresh model list'
 }
-// === 账号管理 ===
+// === Account Management ===
 async function loadAccounts(){
 try{
 const r=await fetch('/api/accounts');const d=await r.json();
 var h='';
 if(d.accounts&&d.accounts.length>0){
-Q('acctStat').innerHTML='共 '+d.total+' 个账号，'+d.valid+' 个有效';
-h+='<table class="acct-tbl"><tr><th>账号</th><th>状态</th><th>Token</th><th>登录时间</th><th>操作</th></tr>';
+Q('acctStat').innerHTML='共 '+d.total+' account(s), '+d.valid+' active';
+h+='<table class="acct-tbl"><tr><th>Account</th><th>状态</th><th>Token</th><th>Login time</th><th>Actions</th></tr>';
 for(var a of d.accounts){
 var st=a.is_valid?'ok':'no';
-var stT=a.is_valid?'有效':'未登录';
+var stT=a.is_valid?'Active / Valid':'Not logged in';
 var l=encodeURIComponent(a.account_label);
 h+='<tr><td>'+a.account_label+'</td><td><span class="acct-st '+st+'"></span>'+stT+'</td><td>'+(a.token_masked||'***')+'</td><td>'+(a.login_time||'-')+'</td>';
-h+=`<td><button class="acct-btn rl" onclick="reloginAccount('${l}')">重登</button><br><button class="acct-btn rm" onclick="removeAccount('${l}')">删除</button></td>`;
+h+=`<td><button class="acct-btn rl" onclick="reloginAccount('${l}')">Relogin</button><br><button class="acct-btn rm" onclick="removeAccount('${l}')">Delete</button></td>`;
 }
 h+='</table>';
 }else{h='<div class="acct-empty">No accounts, please add one above</div>'}
@@ -1769,22 +1769,22 @@ var r=await fetch('/api/accounts/relogin-all',{method:'POST'});
 var d=await r.json();
 if(d.results){
 var ok=d.results.filter(x=>x.ok).length;
-t('重登完成: '+ok+'/'+d.total+' 成功');
+t('Re-login completed: '+ok+'/'+d.total+' Success');
 loadAccounts();
 }else{t('失败: '+(d.error||'未知'),1)}
-}catch(e){t('重登失败: '+e.message,1)}
-if(btn){btn.disabled=false;btn.textContent='全部重新登录'}
+}catch(e){t('Re-login failed: '+e.message,1)}
+if(btn){btn.disabled=false;btn.textContent='Log out and log back in completely'}
 }
 async function cleanupSessions(){
 var btn=event&&event.target;if(btn){btn.disabled=true;btn.textContent='清理中...'}
 try{
 var r=await fetch('/api/cleanup',{method:'POST'});
 var d=await r.json();
-t(d.ok?d.msg:'清理失败: '+(d.msg||'未知'),d.ok?0:1)
-}catch(e){t('清理失败: '+e.message,1)}
-if(btn){btn.disabled=false;btn.textContent='清理过期会话'}
+t(d.ok?d.msg:'Cleanup failed: '+(d.msg||'未知'),d.ok?0:1)
+}catch(e){t('Cleanup failed: '+e.message,1)}
+if(btn){btn.disabled=false;btn.textContent='Clear expired sessions'}
 }
-// === 用量统计 ===
+// === Usage statistics ===
 var _up='total';
 function f(n){return n.toLocaleString()}
 async function loadUsage(){
@@ -1793,11 +1793,11 @@ const r=await fetch('/api/usage');const d=await r.json();
 const p=d[_up]||d.total||{};const m=p.models||{};const t=p.total||{};
 const e=Object.entries(m).sort((a,b)=>b[1].total_tokens-a[1].total_tokens);
 if(!e.length&&!t.requests){Q('usageContent').innerHTML='<div class=ue>📊 No usage data yet</div>';return}
-let h='<div class=us><table class=ut><thead><tr><th class=ml>模型</th><th>请求</th><th>输入</th><th>输出</th><th>总计</th></tr></thead><tbody>';
+let h='<div class=us><table class=ut><thead><tr><th class=ml>Model</th><th>Request</th><th>Input</th><th>Output</th><th>Total</th></tr></thead><tbody>';
 for(const[k,v]of e){h+=`<tr><td class=ml>${k}</td><td>${f(v.requests)}</td><td>${f(v.prompt_tokens)}</td><td>${f(v.completion_tokens)}</td><td>${f(v.total_tokens)}</td></tr>`}
-h+=`<tr class=tr><td class=ml>📋 合计</td><td>${f(t.requests)}</td><td>${f(t.prompt_tokens)}</td><td>${f(t.completion_tokens)}</td><td>${f(t.total_tokens)}</td></tr></tbody></table></div>`;
+h+=`<tr class=tr><td class=ml>📋 Total</td><td>${f(t.requests)}</td><td>${f(t.prompt_tokens)}</td><td>${f(t.completion_tokens)}</td><td>${f(t.total_tokens)}</td></tr></tbody></table></div>`;
 Q('usageContent').innerHTML=h
-}catch(e){Q('usageContent').innerHTML='<div class=ue>加载失败: '+e.message+'</div>'}
+}catch(e){Q('usageContent').innerHTML='<div class=ue>Load failed: '+e.message+'</div>'}
 }
 function switchPeriod(p){
 _up=p;
@@ -1869,8 +1869,8 @@ async def save_config(data: dict):
     if not curl: raise HTTPException(400, "请提供 cURL")
     parsed = parse_curl(curl)
     cfg = build_config(parsed)
-    if not cfg["token"]: return {"ok": False, "error": "未从 cURL 提取到 Token，请确认 Authorization header"}
-    if not cfg["session_id"]: return {"ok": False, "error": "未从 cURL 提取到 Session ID"}
+    if not cfg["token"]: return {"ok": False, "error": "Token not extracted from cURL, please verify the Authorization header"}
+    if not cfg["session_id"]: return {"ok": False, "error": "Session ID not extracted from cURL"}
     # 创建账号并加入池
     account_label = f"curl_import_{cfg['token'][:8]}"
     ds_account = DsAccount(
@@ -2206,7 +2206,7 @@ def _discover_models() -> dict:
         model_configs = settings.get("model_configs", {}).get("value", [])
 
         if not model_configs:
-            print(f"[模型发现] model_configs 为空")
+            print(f"[Model discovery] model_configs is empty")
             return None
 
         models = {}
@@ -2229,7 +2229,7 @@ def _discover_models() -> dict:
             # 基础模型
             name = f"deepseek-{mt}" if mt != "default" else "deepseek-default"
             models[name] = (False, False, max_in, max_out)
-            print(f"[模型发现]   {name}: in={max_in}, out={max_out}, think={has_think}, search={has_search}")
+            print(f"[Model discovery]   {name}: in={max_in}, out={max_out}, think={has_think}, search={has_search}")
 
             # 思维链变体
             if has_think:
@@ -2250,11 +2250,11 @@ def _discover_models() -> dict:
             # 模型名称为纯英文ID，中文对照见 README.md
             _models_cache = models
             _models_cache_time = time.time()
-            print(f"[模型发现] 发现 {len(models)} 个模型: {list(models.keys())}")
+            print(f"[Model discovery] discovered {len(models)} models: {list(models.keys())}")
             return models
 
     except Exception as e:
-        print(f"[模型发现] 失败: {e}")
+        print(f"[Model discovery] failed: {e}")
 
     return None
 
@@ -2271,7 +2271,7 @@ def get_models() -> dict:
         return discovered
 
     # 探测失败 → 返回空（不骗人）
-    print("[模型发现] 探测失败，模型列表为空")
+    print("[Model discovery] Detection failed, model list is empty")
     return {}
 
 
