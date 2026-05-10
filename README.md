@@ -191,9 +191,9 @@ The system will automatically: Login to get Token → Create chat session → Sa
 curl http://localhost:8000/v1/models
 ```
 
-返回动态探测到的所有可用模型，包含 `max_input_tokens`、`max_output_tokens` 等详细信息。
+Returns all dynamically detected available models, including detailed information such as `max_input_tokens`, `max_output_tokens`, etc.
 
-### 2. 非流式对话
+### 2. Non-Streaming Chat
 
 ```bash
 curl http://localhost:8000/v1/chat/completions \
@@ -244,7 +244,7 @@ curl http://localhost:8000/v1/chat/completions \
   }'
 ```
 
-**Vision 图片上传**（需 Vision 模型，上传后 fork 到 vision 类型）：
+**Vision Image Upload** (requires Vision model, upload then fork to vision type):
 
 ```bash
 # Prepare image base64
@@ -266,7 +266,7 @@ curl http://localhost:8000/v1/chat/completions \
 
 > **Note:** Text files are not forked; they directly reference the original `file_id` after DeepSeek finishes parsing. Images need to be forked to `"vision"` to be readable by the Vision model.
 
-### 5. Responses API（OpenAI 兼容）
+### 5. Responses API (OpenAI Compatible)
 
 Supports OpenAI's latest `/v1/responses` endpoint. Non-streaming:
 
@@ -292,7 +292,7 @@ curl http://localhost:8000/v1/responses \
   }'
 ```
 
-Events: `response.created` → `response.in_progress` → `response.output_item.added` → `response.content_part.added` → `response.output_text.delta`(逐块) → `response.output_text.done` → `response.content_part.done` → `response.output_item.done` → `response.completed`
+Events: `response.created` → `response.in_progress` → `response.output_item.added` → `response.content_part.added` → `response.output_text.delta`(Chunk by chunk) → `response.output_text.done` → `response.content_part.done` → `response.output_item.done` → `response.completed`
 
 Other endpoints (support streaming replay):
 
