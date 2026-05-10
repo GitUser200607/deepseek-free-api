@@ -4,71 +4,71 @@
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![FastAPI](https://img.shields.io/badge/FastAPI-teal)](https://fastapi.tiangolo.com/)
 
-将 **DeepSeek 网页端免费对话**（chat.deepseek.com）反代为 **OpenAI 兼容 API**，支持动态模型发现、PoW 自动求解、Token 自动刷新，并提供纯聊天版（no-tools 分支，无工具调用 prompt 注入）。
+Reverse-engineers **DeepSeek web free chat** (chat.deepseek.com) into an **OpenAI-compatible API**, supporting dynamic model discovery, automated PoW solving, automatic token refresh, and a pure chat version (no-tools branch, no tool call prompt injection).
 
-本项目所修改代码均为ai完成，不含任何一句人工代码，望周知！
+**Note:** All modified code in this project is AI-generated, without a single line of human-written code.
 
-[zhangjiabo522](https://github.com/zhangjiabo522) — 大力感谢热心群友为 Vision 功能修改测试提供模型Token算力
+[zhangjiabo522](https://github.com/zhangjiabo522) — Special thanks for providing model tokens and computing power for testing Vision features.
 
-> **💡 不需要工具调用？** 如果你的使用场景是纯对话（写作、翻译、代码、问答），建议使用 [`no-tools` 分支](#无工具分支-no-tools) — 不注入工具 prompt，上下文更干净，输出质量更高。
+> **💡 Don't need tool calling?** If your use case is pure conversation (writing, translation, coding, Q&A), we recommend using the [`no-tools` branch](#no-tools-branch) — no tool prompt injection, cleaner context, higher output quality.
 
-> **参考项目：** [NIyueeE/ds-free-api](https://github.com/NIyueeE/ds-free-api)（Rust 版），本项目为 Python 重写。
-> Rust 原版使用浏览器自动化（Playwright/Chrome），本 Python 版改为**纯 HTTP 转发**（curl_cffi 模拟 Chrome TLS 指纹），资源占用更低。
+> **Reference project:** [NIyueeE/ds-free-api](https://github.com/NIyueeE/ds-free-api) (Rust version). This project is a Python rewrite.
+> The Rust original uses browser automation (Playwright/Chrome), while this Python version uses **pure HTTP forwarding** (curl_cffi simulating Chrome TLS fingerprint) for lower resource usage.
 
-## 目录
+## Table of Contents
 
-- [特性](#特性)
-- [架构](#架构)
-- [快速开始](#快速开始)
-  - [一键部署（推荐）](#一键部署推荐)
-  - [手动安装](#手动安装)
-- [配置凭证](#配置凭证)
-  - [方法1：手机号/邮箱登录（推荐）](#方法1手机号邮箱登录推荐)
-  - [方法2：cURL 导入](#方法2curl-导入)
-  - [方法3：Cookie 导入](#方法3cookie-导入)
-- [API 使用](#api-使用)
-  - [列出模型](#1-列出模型)
-  - [非流式对话](#2-非流式对话)
-  - [流式对话](#3-流式对话)
-  - [模型刷新](#7-模型刷新)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+  - [One-Click Deployment (Recommended)](#one-click-deployment-recommended)
+  - [Manual Installation](#manual-installation)
+- [Authentication Setup](#authentication-setup)
+  - [Method 1: Phone/Email Login (Recommended)](#method-1-phoneemail-login-recommended)
+  - [Method 2: cURL Import](#method-2-curl-import)
+  - [Method 3: Cookie Import](#method-3-cookie-import)
+- [API Usage](#api-usage)
+  - [List Models](#1-list-models)
+  - [Non-Streaming Chat](#2-non-streaming-chat)
+  - [Streaming Chat](#3-streaming-chat)
+  - [Refresh Models](#7-refresh-models)
 - [Anthropic Messages API](#6-anthropic-messages-api)
-- [Responses API](#5-responses-apiopenai-兼容)
-- [模型系统](#模型系统)
-  - [动态模型发现](#动态模型发现)
-  - [当前可用模型](#当前可用模型)
-- [工具调用详解](#工具调用详解)
-- [无工具分支 (no-tools)](#无工具分支-no-tools)
-- [PoW 求解机制](#pow-求解机制)
-- [Token 自动刷新](#token-自动刷新)
-- [管理命令](#管理命令)
-- [项目结构](#项目结构)
-- [配置参考](#配置参考)
-- [依赖](#依赖)
-- [限制与已知问题](#限制与已知问题)
-- [常见问题](#常见问题)
-- [许可与致谢](#许可与致谢)
+- [Responses API](#5-responses-apiopenai-compatible)
+- [Model System](#model-system)
+  - [Dynamic Model Discovery](#dynamic-model-discovery)
+  - [Currently Available Models](#currently-available-models)
+- [Tool Calling Details](#tool-calling-details)
+- [No-Tools Branch](#no-tools-branch)
+- [PoW Solving Mechanism](#pow-solving-mechanism)
+- [Automatic Token Refresh](#automatic-token-refresh)
+- [Administration Commands](#administration-commands)
+- [Project Structure](#project-structure)
+- [Configuration Reference](#configuration-reference)
+- [Dependencies](#dependencies)
+- [Limitations & Known Issues](#limitations--known-issues)
+- [FAQ](#faq)
+- [License & Acknowledgments](#license--acknowledgments)
 
-## 特性
+## Features
 
-- **OpenAI 完全兼容** — `/v1/chat/completions`（流式/非流式）、`/v1/models`、`/v1/models/refresh`、**`/v1/responses`** 端点
-- **OpenAI Responses API** — 新增 `/v1/responses` create/retrieve/delete/input_items/cancel/compact，完整 SSE 生命周期事件，Structured Output 支持
-- **纯聊天代理** — 无工具调用 prompt 注入，输出更干净，模型注意力集中在用户问题上
-- **动态模型发现** — 启动时从 DeepSeek 官方 API 实时探测模型列表，每小时自动刷新（含上下文大小等完整信息）
-- **PoW 自动求解** — Node.js WASM 主求解器 + Python 纯算法回退，请求前自动获取 challenge 并求解
-- **Token 自动刷新** — 检测到 401 时自动用保存的密码重新登录，无需人工干预
-- **深度思考** — 支持 DeepSeek 的 `<thought>` 标签，流式输出时分离为 `reasoning_content`
-- **Vision 图像理解** — 支持图片上传、解析、对话
-- **文本文件上传** — 支持 .txt/.md/.py 等文本文件直接上传对话，走 ref_file_ids（和网页端一致）
-- **联网搜索** — 支持 search 模型变体的 `search_enabled` 参数
-- **管理面板** — 内嵌单文件 Web UI，支持手机号/邮箱登录、cURL 导入
-- **纯 HTTP 方案** — 不依赖浏览器/Playwright/Chrome，用 curl_cffi 模拟 Chrome TLS 指纹
-- **无工具分支** — 提供 `no-tools` 分支，移除工具调用逻辑，适合纯对话场景，输出质量更高
+- **Fully OpenAI Compatible** — `/v1/chat/completions` (streaming/non-streaming), `/v1/models`, `/v1/models/refresh`, **`/v1/responses`** endpoints
+- **OpenAI Responses API** — New `/v1/responses` create/retrieve/delete/input_items/cancel/compact, complete SSE lifecycle events, Structured Output support
+- **Pure Chat Proxy** — No tool call prompt injection, cleaner output, model attention fully on user queries
+- **Dynamic Model Discovery** — Real-time model list detection from DeepSeek official API on startup, auto-refreshed hourly (including full info like context size)
+- **Automated PoW Solving** — Node.js WASM primary solver + Python pure algorithm fallback, automatically fetches challenge and solves before each request
+- **Automatic Token Refresh** — Automatically re-login using saved password when 401 detected, no manual intervention needed
+- **Deep Reasoning** — Supports DeepSeek's `<thought>` tags, separated as `reasoning_content` in streaming output
+- **Vision Image Understanding** — Supports image upload, parsing, and conversation
+- **Text File Upload** — Supports .txt/.md/.py and other text files for direct upload to conversation, uses ref_file_ids (consistent with web version)
+- **Web Search** — Supports `search_enabled` parameter for search model variants
+- **Admin Panel** — Embedded single-file Web UI supporting phone/email login and cURL import
+- **Pure HTTP Solution** — No browser/Playwright/Chrome dependency, uses curl_cffi to simulate Chrome TLS fingerprint
+- **No-Tools Branch** — Provides `no-tools` branch that removes tool calling logic, ideal for pure conversation scenarios with higher output quality
 
-## 架构
+## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                     OpenAI 兼容客户端                        │
+│                     OpenAI Compatible Client                │
 │            (ChatBox / LobeChat / curl / Cline)             │
 └───────────────┬──────────────────────────────────────────┘
                 │  /v1/chat/completions
@@ -76,20 +76,21 @@
 ┌──────────────────────────────────────────────────────────┐
 │                 DeepSeek Free API Proxy (FastAPI)           │
 │  ┌─────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │ 路由层   │  │  tool_call   │  │  tool_sieve  │  │  tool_dsml   │  │   curl_cffi 客户端    │ │
-│  │ /v1/*   │──│ (DSML提示词) │──│ (流式筛分)   │──│ (DSML解析)   │──│ (模拟Chrome指纹)      │ │
+│  │ Routing │  │  tool_call   │  │  tool_sieve  │  │  tool_dsml   │  │   curl_cffi Client    │ │
+│  │ /v1/*   │──│ (DSML Prompt)│──│ (Stream Sieve)│──│ (DSML Parse) │──│ (Chrome Fingerprint)  │ │
 │  └─────────┘  └──────────────┘  └──────────────────────┘ │
 │  ┌─────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │ 模型发现 │  │   PoW 求解   │  │   Token 自动刷新      │ │
-│  │ (动态)   │  │ (Node+Python) │  │ (保存密码自动relogin) │ │
+│  │ Model    │  │   PoW Solver │  │   Auto Token Refresh  │ │
+│  │ Discovery│  │ (Node+Python)│  │ (Saved Password Auto) │ │
+│  │ (Dynamic)│  │              │  │     -relogin)         │ │
 │  └─────────┘  └──────────────┘  └──────────────────────┘ │
 │  ┌─────────┐  ┌──────────────────────────┐              │
-│  │ Vision  │  │ 文件上传/解析             │              │
-│  │ 图像理解 │  │ (图片: upload→fork→wait)  │              │
-│  └─────────┘  │ (文本: upload→wait)       │              │
-│               └──────────────────────────┘              │
+│  │ Vision  │  │ File Upload/Parse        │              │
+│  │ Image   │  │ (Image: upload→fork→wait) │              │
+│  │ Understanding│  │ (Text: upload→wait)      │              │
+│  └─────────┘  └──────────────────────────┘              │
 └───────────────┬──────────────────────────────────────────┘
-                │  HTTPS (curl_cffi, Chrome指纹)
+                │  HTTPS (curl_cffi, Chrome Fingerprint)
                 ▼
 ┌──────────────────────────────────────────────────────────┐
 │        DeepSeek API (chat.deepseek.com)                   │
@@ -102,89 +103,89 @@
 └──────────────────────────────────────────────────────────┘
 ```
 
-## 快速开始
+## Quick Start
 
-### 一键部署（推荐）
+### One-Click Deployment (Recommended)
 
 ```bash
-# 先安装 Node.js（PoW 求解器需要）
+# First install Node.js (required for PoW solver)
 # Termux:
 pkg install nodejs
 
 # Linux:
 # sudo apt install nodejs
 
-# 直接克隆（推荐）
+# Clone directly (recommended)
 git clone https://github.com/Fly143/deepseek-free-api.git
 cd deepseek-free-api
 chmod +x deploy.sh
 
-# 前台启动（Ctrl+C 停止）
+# Start in foreground (Ctrl+C to stop)
 ./deploy.sh
 
-# 或后台启动
+# Or start in background
 ./deploy.sh --bg
 
-# 查看状态
+# Check status
 ./deploy.sh --status
 
-# 停止
+# Stop
 ./deploy.sh --stop
 ```
 
-部署完成后访问：**http://localhost:8000/admin**
+After deployment, access: **http://localhost:8000/admin**
 
-> 💡 **不需要工具调用？** 克隆 [`no-tools` 分支](https://github.com/Fly143/deepseek-free-api/tree/no-tools) 即可获得更干净的纯对话版本（无 prompt 注入，输出质量更高）。
+> 💡 **Don't need tool calling?** Clone the [`no-tools` branch](https://github.com/Fly143/deepseek-free-api/tree/no-tools) for a cleaner pure chat version (no prompt injection, higher output quality).
 
-### 手动安装
+### Manual Installation
 
 ```bash
-# 1. 确保有 Python 3.10+ 和 Node.js
+# 1. Ensure you have Python 3.10+ and Node.js
 python3 --version
 node --version
 
-# 2. 安装 Python 依赖
+# 2. Install Python dependencies
 pip install fastapi uvicorn curl-cffi python-dotenv
 
-# 3. 启动
+# 3. Start
 python3 proxy.py
 ```
 
-## 配置凭证
+## Authentication Setup
 
-打开管理面板 http://localhost:8000/admin 进行配置。
+Open the admin panel at http://localhost:8000/admin to configure.
 
-### 方法1：手机号/邮箱登录（推荐）
+### Method 1: Phone/Email Login (Recommended)
 
-最方便的方式，和网页登录体验一样：
+The most convenient method, same experience as web login:
 
-1. 选择 **手机号** 或 **邮箱** 标签
-2. 填入手机号（区号默认 +86）或邮箱
-3. 填入密码
-4. 点击 **登录**
+1. Select the **Phone** or **Email** tab
+2. Enter your phone number (default area code +86) or email
+3. Enter your password
+4. Click **Login**
 
-系统会自动完成：登录获取 Token → 创建聊天 Session → 保存配置到 `token.json`（含密码用于自动刷新）。
+The system will automatically: Login to get Token → Create chat session → Save configuration to `token.json` (includes password for auto-refresh).
 
-### 方法2：cURL 导入
+### Method 2: cURL Import
 
-1. 登录 chat.deepseek.com
-2. 打开**开发者工具** → **Network** 面板
-3. 发送一条消息，找到 `completion` 请求
-4. 右键 → **Copy as cURL**
-5. 在管理面板展开 **高级: 手动粘贴 cURL**，粘贴进去
-6. 点击 **保存 cURL**
+1. Log in to chat.deepseek.com
+2. Open **Developer Tools** → **Network** panel
+3. Send a message and find the `completion` request
+4. Right-click → **Copy as cURL**
+5. In the admin panel, expand **Advanced: Manually paste cURL**, paste it in
+6. Click **Save cURL**
 
-### 方法3：Cookie 导入
+### Method 3: Cookie Import
 
-1. 登录 chat.deepseek.com
-2. 打开**开发者工具** → **Application** → **Cookies**
-3. 找到 `chat.deepseek.com` 的 Cookie
-4. 导出包含 `userToken` 的 Cookie 字符串
-5. 粘贴到管理面板 → 保存
+1. Log in to chat.deepseek.com
+2. Open **Developer Tools** → **Application** → **Cookies**
+3. Find the Cookie for `chat.deepseek.com`
+4. Export the Cookie string containing `userToken`
+5. Paste it into the admin panel → Save
 
-## API 使用
+## API Usage
 
-### 1. 列出模型
+### 1. List Models
 
 ```bash
 curl http://localhost:8000/v1/models
@@ -200,12 +201,12 @@ curl http://localhost:8000/v1/chat/completions \
   -d '{
     "model": "deepseek-default",
     "messages": [
-      {"role": "user", "content": "用Python写一个快速排序"}
+      {"role": "user", "content": "Write a quick sort in Python"}
     ]
   }'
 ```
 
-### 3. 流式对话
+### 3. Streaming Chat
 
 ```bash
 curl http://localhost:8000/v1/chat/completions \
@@ -213,21 +214,21 @@ curl http://localhost:8000/v1/chat/completions \
   -d '{
     "model": "deepseek-reasoner",
     "messages": [
-      {"role": "user", "content": "解释量子纠缠"}
+      {"role": "user", "content": "Explain quantum entanglement"}
     ],
     "stream": true
   }'
-```
+ ```
 
-流式响应中思考内容会出现在 `delta.reasoning_content` 字段，正式内容在 `delta.content`。
+In streaming responses, reasoning content appears in the `delta.reasoning_content` field, and the actual content appears in `delta.content`.
 
-### 4. 文件上传（文本 & 图片）
+### 4. File Upload (Text & Images)
 
-**文本文件上传**（所有模型均支持，不 fork，走 `ref_file_ids`）：
+**Text File Upload** (supported by all models, no fork, uses `ref_file_ids`):
 
 ```bash
-# 准备文件 base64
-FILE_B64=$(base64 -w0 三体简介.txt)
+# Prepare file base64
+FILE_B64=$(base64 -w0 three_body_intro.txt)
 
 curl http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -236,8 +237,8 @@ curl http://localhost:8000/v1/chat/completions \
     "messages": [{
       "role": "user",
       "content": [
-        {"type": "text", "text": "这个文件是什么内容？"},
-        {"type": "file", "file": {"filename": "三体简介.txt", "file_data": "'"$FILE_B64"'"}}
+        {"type": "text", "text": "What is the content of this file?"},
+        {"type": "file", "file": {"filename": "three_body_intro.txt", "file_data": "'"$FILE_B64"'"}}
       ]
     }]
   }'
@@ -246,7 +247,7 @@ curl http://localhost:8000/v1/chat/completions \
 **Vision 图片上传**（需 Vision 模型，上传后 fork 到 vision 类型）：
 
 ```bash
-# 准备图片 base64
+# Prepare image base64
 IMG_B64=$(base64 -w0 photo.png)
 
 curl http://localhost:8000/v1/chat/completions \
@@ -256,62 +257,62 @@ curl http://localhost:8000/v1/chat/completions \
     "messages": [{
       "role": "user",
       "content": [
-        {"type": "text", "text": "描述这张图片"},
+        {"type": "text", "text": "Describe this image"},
         {"type": "image_url", "image_url": {"url": "data:image/png;base64,'"$IMG_B64"'"}}
       ]
     }]
   }'
 ```
 
-> **注意：** 文本文件不 fork，直接等 DeepSeek 解析完成后引用原始 `file_id`；图片需要 fork 到 `"vision"` 才能被 Vision 模型读取。
+> **Note:** Text files are not forked; they directly reference the original `file_id` after DeepSeek finishes parsing. Images need to be forked to `"vision"` to be readable by the Vision model.
 
 ### 5. Responses API（OpenAI 兼容）
 
-支持 OpenAI 最新的 `/v1/responses` 端点。非流式：
+Supports OpenAI's latest `/v1/responses` endpoint. Non-streaming:
 
 ```bash
 curl http://localhost:8000/v1/responses \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek",
-    "input": "用Python写一个快速排序",
+    "input": "Write a quick sort in Python",
     "stream": false
   }'
 ```
 
-流式（带完整 SSE 生命周期事件）：
+Streaming (with complete SSE lifecycle events):
 
 ```bash
 curl http://localhost:8000/v1/responses \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek",
-    "input": "解释量子纠缠",
+    "input": "Explain quantum entanglement",
     "stream": true
   }'
 ```
 
 Events: `response.created` → `response.in_progress` → `response.output_item.added` → `response.content_part.added` → `response.output_text.delta`(逐块) → `response.output_text.done` → `response.content_part.done` → `response.output_item.done` → `response.completed`
 
-其他端点（支持流式 replay）：
+Other endpoints (support streaming replay):
 
 ```bash
-# 查询
+# Retrieve
 curl http://localhost:8000/v1/responses/{response_id}
 
-# 输入项
+# Input items
 curl http://localhost:8000/v1/responses/{response_id}/input_items
 
-# 取消
+# Cancel
 curl -X POST http://localhost:8000/v1/responses/{response_id}/cancel
 
-# 删除
+# Delete
 curl -X DELETE http://localhost:8000/v1/responses/{response_id}
 
-# 压缩多轮对话
+# Compact multi-turn conversation
 curl -X POST http://localhost:8000/v1/responses/{response_id}/compact \
   -H "Content-Type: application/json" \
-  -d '{"instructions": "请用中文回答接下来的所有问题"}'
+  -d '{"instructions": "Please answer all following questions in English"}'
 ```
 
 Structured Output（json_schema）：
@@ -321,7 +322,7 @@ curl http://localhost:8000/v1/responses \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek",
-    "input": "北京今天天气25°C，请返回结构化数据",
+    "input": "Beijing weather is 25°C today, please return structured data",
     "text": {
       "format": {
         "type": "json_schema",
@@ -339,16 +340,16 @@ curl http://localhost:8000/v1/responses \
   }'
 ```
 
-> Responses API 是对现有 `/v1/chat/completions` 的补充，两者可同时使用。
+> The Responses API is a supplement to the existing `/v1/chat/completions` endpoint; both can be used simultaneously.
 
 ### 6. Anthropic Messages API
 
-本代理完全兼容 **Anthropic Messages API** 格式，支持 RikkaHub 等客户端无缝接入。
+This proxy is fully compatible with the **Anthropic Messages API** format, supporting seamless integration with clients such as RikkaHub.
 
-**认证方式**：使用 `x-api-key` 头或 `Authorization: Bearer` 均可：
+**Authentication method**: Use either the `x-api-key` header or `Authorization: Bearer`:
 
 ```bash
-# x-api-key 方式（推荐）
+# x-api-key method (recommended)
 curl http://localhost:8000/v1/messages \
   -H "x-api-key: sk-dsapi" \
   -H "Content-Type: application/json" \
@@ -356,12 +357,12 @@ curl http://localhost:8000/v1/messages \
     "model": "deepseek-default",
     "max_tokens": 1024,
     "messages": [
-      {"role": "user", "content": "用Python写一个快速排序"}
+      {"role": "user", "content": "Write a quick sort in Python"}
     ]
   }'
 ```
 
-**流式（思考链 + 文本）：**
+**Streaming (reasoning chain + text):**
 
 ```bash
 curl http://localhost:8000/v1/messages \
@@ -372,34 +373,35 @@ curl http://localhost:8000/v1/messages \
     "max_tokens": 1024,
     "stream": true,
     "messages": [
-      {"role": "user", "content": "解释量子纠缠"}
+      {"role": "user", "content": "Explain quantum entanglement"}
     ]
   }'
 ```
 
-思考内容以 `thinking` block 形式实时流出，文本以 `text` block 流出。
+Reasoning content flows in real-time as `thinking` blocks, and text flows as `text` blocks.
 
-**可用端点：**
+**Available endpoints:**
 
-| 方法 | 端点 | 说明 |
-|------|------|------|
-| POST | `/v1/messages` | 发送消息（文本/思考链/工具调用） |
-| POST | `/v1/messages/count_tokens` | 计算 token 数 |
-| GET | `/v1/messages/{id}` | 查询已发送的消息 |
-| POST | `/v1/messages/batches` | 创建批量请求 |
-| GET | `/v1/messages/batches` | 列出批量请求 |
-| GET | `/v1/messages/batches/{id}` | 查询批量详情 |
-| POST | `.../cancel` | 取消批量 |
-| GET | `.../results` | 下载批量结果 |
-| DELETE | `/v1/messages/batches/{id}` | 删除批量 |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/v1/messages` | Send message (text/reasoning chain/tool call) |
+| POST | `/v1/messages/count_tokens` | Count tokens |
+| GET | `/v1/messages/{id}` | Retrieve sent message |
+| POST | `/v1/messages/batches` | Create batch request |
+| GET | `/v1/messages/batches` | List batch requests |
+| GET | `/v1/messages/batches/{id}` | Retrieve batch details |
+| POST | `.../cancel` | Cancel batch |
+| GET | `.../results` | Download batch results |
+| DELETE | `/v1/messages/batches/{id}` | Delete batch |
 
-> **注意：** no-tools 分支的 `/v1/messages` 端点**不支持** `tools` 参数，纯对话场景使用更简洁。
+> **Note:** The `/v1/messages` endpoint in the no-tools branch does **not** support the `tools` parameter, making it cleaner for pure conversation scenarios.
 
-#### Anthropic 模型名映射
+#### Anthropic Model Name Mapping
 
-Claude Code CLI 等工具期望 Anthropic 风格的模型名（如 `claude-sonnet-4-6`），无法直接使用 `deepseek-*` 原生名。本代理在 Anthropic 端点内部自动映射：
+Tools like Claude Code CLI expect Anthropic-style model names (e.g., `claude-sonnet-4-6`) and cannot directly use native `deepseek-*` names. This proxy automatically maps them internally within the Anthropic endpoint:
 
-| Claude 模型名 | → DeepSeek 内部 | 思考 | 联网 |
+| Claude Model Name | → DeepSeek Internal | Reasoning | Web Search |
+|-------------------|---------------------|-----------|-------------|
 |---|---|---|---|
 | `claude-opus-4-6` | `deepseek-expert-reasoner` | ✓ | ✗ |
 | `claude-opus-4-6-search` | `deepseek-expert-reasoner-search` | ✓ | ✓ |
@@ -411,29 +413,29 @@ Claude Code CLI 等工具期望 Anthropic 风格的模型名（如 `claude-sonne
 | `claude-3-5-sonnet` | `deepseek-default` | ✗ | ✗ |
 | `claude-3-opus` | `deepseek-expert-reasoner` | ✓ | ✗ |
 
-也支持 Claude 4.x 历史名（`claude-sonnet-4-5`、`claude-opus-4-1` 等）和 `-nothinking` 变体。DeepSeek 原生名（`deepseek-*`）继续直接使用，`/v1/models` 返回的仍是原生名，不影响其他软件。
+Claude 4.x historical names (e.g., `claude-sonnet-4-5`, `claude-opus-4-1`, etc.) and `-nothinking` variants are also supported. Native DeepSeek names (`deepseek-*`) continue to work directly. `/v1/models` still returns native names, which does not affect other software.
 
 ```bash
-# 用 Claude 模型名同样可用
+# Using Claude model names also works
 curl http://localhost:8000/v1/messages \
   -H "x-api-key: sk-dsapi" \
   -d '{"model":"claude-sonnet-4-6","max_tokens":100,"messages":[{"role":"user","content":"hi"}]}'
 ```
 
-### 7. 模型刷新
+### 7. Refresh Models
 
 ```bash
-# 强制刷新模型列表（无需等待1小时缓存过期）
+# Force refresh model list (no need to wait for 1-hour cache expiration)
 curl -X POST http://localhost:8000/v1/models/refresh
 ```
 
-## 模型系统
+## Model System
 
-### 动态模型发现
+### Dynamic Model Discovery
 
-启动时自动调用 DeepSeek 官方 API `GET /api/v0/client/settings?scope=model` 获取当前可用模型配置。
+On startup, automatically calls DeepSeek's official API `GET /api/v0/client/settings?scope=model` to retrieve currently available model configurations.
 
-核心发现逻辑（`proxy.py:418`）：
+Core discovery logic (`proxy.py:418`):
 
 ```python
 def _discover_models():
@@ -441,60 +443,62 @@ def _discover_models():
         "https://chat.deepseek.com/api/v0/client/settings?scope=model",
         headers={"Authorization": f"Bearer {token}", ...}
     )
-    # 解析 model_configs，按 model_type 生成基础/思考/搜索/思考+搜索变体
+    # Parse model_configs, generate base/reasoning/search/reasoning+search variants by model_type
 ```
 
-- **自动探测**：无需手动更新模型列表
-- **1小时缓存**：避免频繁请求
-- **手动刷新**：`POST /v1/models/refresh`
-- **容错**：探测失败不影响已缓存的列表
+- **Auto-detection**: No need to manually update the model list
+- **1-hour cache**: Avoids frequent requests
+- **Manual refresh**: `POST /v1/models/refresh`
+- **Fault tolerance**: Detection failure does not affect the cached list
 
-每个模型返回的信息包括：
-- `max_input_tokens` — 最大输入 token
-- `max_output_tokens` — 最大输出 token（含思考）
-- `thinking_enabled` — 是否支持深度思考
-- `search_enabled` — 是否支持联网搜索
+Information returned for each model includes:
+- `max_input_tokens` — Maximum input tokens
+- `max_output_tokens` — Maximum output tokens (including reasoning)
+- `thinking_enabled` — Whether deep reasoning is supported
+- `search_enabled` — Whether web search is supported
 
-### 当前可用模型
+### Currently Available Models
 
-模型列表**随 DeepSeek 官方动态变化**。当前探测到 3 个基础模型 × 4 变体 = 12 个模型：
+The model list **changes dynamically with DeepSeek official updates**. Currently detected: 3 base models × 4 variants = 12 models:
 
-| 模型 ID | 中文名称 | 说明 | 思考 | 联网 |
-|---------|---------|------|:----:|:----:|
-| `deepseek-default` | DeepSeek V4 Flash 基础版 | V4 Flash 快速基础模型 | ✗ | ✗ |
-| `deepseek-reasoner` | DeepSeek V4 Flash 思考 | V4 Flash + 深度思考 | ✓ | ✗ |
-| `deepseek-search` | DeepSeek V4 Flash 联网 | V4 Flash + 联网搜索 | ✗ | ✓ |
-| `deepseek-reasoner-search` | DeepSeek V4 Flash 思考+联网 | V4 Flash + 思考 + 联网 | ✓ | ✓ |
-| `deepseek-expert` | DeepSeek V4 Pro 基础版 | V4 Pro 专家基础模型 | ✗ | ✗ |
-| `deepseek-expert-reasoner` | DeepSeek V4 Pro 思考 | V4 Pro + 深度思考 | ✓ | ✗ |
-| `deepseek-expert-search` | DeepSeek V4 Pro 联网 | V4 Pro + 联网搜索 | ✗ | ✓ |
-| `deepseek-expert-reasoner-search` | DeepSeek V4 Pro 思考+联网 | V4 Pro + 思考 + 联网 | ✓ | ✓ |
-| `deepseek-vision` | DeepSeek Vision 基础版 | 图像理解基础模型 | ✗ | ✗ |
-| `deepseek-vision-reasoner` | DeepSeek Vision 思考 | 图像理解 + 深度思考 | ✓ | ✗ |
 
-> **注意：**
-> - 如果 DeepSeek 推出新模型，代理会自动发现，无需改代码
-> - 所有模型均显式指定 `model_type`（`default` / `expert` / `vision`），确保 DeepSeek 正确路由
-> - 模型名称为纯英文 ID，中文对照见上表
+| Model ID | Display Name | Description | Reasoning | Web Search |
+|----------|--------------|-------------|:---------:|:-----------:|
+| `deepseek-default` | DeepSeek V4 Flash Base | V4 Flash fast base model | ✗ | ✗ |
+| `deepseek-reasoner` | DeepSeek V4 Flash Reasoning | V4 Flash + deep reasoning | ✓ | ✗ |
+| `deepseek-search` | DeepSeek V4 Flash Search | V4 Flash + web search | ✗ | ✓ |
+| `deepseek-reasoner-search` | DeepSeek V4 Flash Reasoning+Search | V4 Flash + reasoning + search | ✓ | ✓ |
+| `deepseek-expert` | DeepSeek V4 Pro Base | V4 Pro expert base model | ✗ | ✗ |
+| `deepseek-expert-reasoner` | DeepSeek V4 Pro Reasoning | V4 Pro + deep reasoning | ✓ | ✗ |
+| `deepseek-expert-search` | DeepSeek V4 Pro Search | V4 Pro + web search | ✗ | ✓ |
+| `deepseek-expert-reasoner-search` | DeepSeek V4 Pro Reasoning+Search | V4 Pro + reasoning + search | ✓ | ✓ |
+| `deepseek-vision` | DeepSeek Vision Base | Image understanding base model | ✗ | ✗ |
+| `deepseek-vision-reasoner` | DeepSeek Vision Reasoning | Image understanding + deep reasoning | ✓ | ✗ |
 
-## 分支说明
+> **Note:**
+> - If DeepSeek releases new models, the proxy will automatically discover them without requiring code changes
+> - All models explicitly specify `model_type` (`default` / `expert` / `vision`), ensuring proper routing to DeepSeek
+> - Model names are pure English IDs; see the table above for Chinese equivalents
 
-本仓库提供两个分支：
+## Branch Information
 
-| 分支 | 特点 |
-|------|------|
-| `main`（当前分支） | 完整功能版 — 支持 DSML 工具调用、流式筛分、会话管理等。需要工具调用时使用 |
-| `no-tools` | 纯对话代理 — 无工具调用 prompt 注入，输出更干净。适合写作、翻译、代码生成等场景 |
+This repository provides two branches:
 
-> 当前你正在使用 `main` 分支。如需纯对话版本（无工具调用），请切换到 `no-tools` 分支：
+| Branch | Features |
+|--------|----------|
+| `main` (current branch) | Full-featured version — Supports DSML tool calling, streaming sieve, session management, etc. Use when tool calling is needed |
+| `no-tools` | Pure chat proxy — No tool call prompt injection, cleaner output. Suitable for writing, translation, code generation, and similar scenarios |
+
+> You are currently using the `main` branch. For the pure chat version (no tool calling), please switch to the `no-tools` branch:
+
 > ```bash
 > git checkout no-tools
 > ```
 
 
-## 工具调用详解
+## Tool Calling Details
 
-DeepSeek 网页端**不支持** OpenAI function calling 格式。本代理通过 **DSML 提示词注入 + 多策略提取**实现工具调用：
+The DeepSeek web interface does **not** support the OpenAI function calling format. This proxy implements tool calling through **DSML prompt injection + multi-strategy extraction**:
 
 ```bash
 curl http://localhost:8000/v1/chat/completions \
@@ -502,12 +506,12 @@ curl http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek-chat",
-    "messages": [{"role": "user", "content": "北京天气怎么样？"}],
+    "messages": [{"role": "user", "content": "What's the weather like in Beijing?"}],
     "tools": [{
       "type": "function",
       "function": {
         "name": "get_weather",
-        "description": "获取天气信息",
+        "description": "Get weather information",
         "parameters": {
           "type": "object",
           "properties": {"city": {"type": "string"}},
@@ -518,9 +522,9 @@ curl http://localhost:8000/v1/chat/completions \
   }'
 ```
 
-### DSML 提示词注入
+### DSML Prompt Injection
 
-将 OpenAI tools 定义转换为 DSML 格式，注入到 system 消息中：
+Converts OpenAI tool definitions into DSML format and injects them into the system message:
 
 ```xml
 <|DSML|tool_calls>
@@ -530,122 +534,123 @@ curl http://localhost:8000/v1/chat/completions \
 </|DSML|tool_calls>
 ```
 
-### 提取策略
+### Extraction Strategies
 
-| 优先级 | 格式 | 说明 |
-|--------|------|------|
-| DSML | `<\|DSML\|tool_calls><\|DSML\|invoke name="X">...</\|DSML\|invoke></\|DSML\|tool_calls>` | 主力格式，7 种噪声变体容错 |
-| TOOL_CALL | `TOOL_CALL: name(key=value)` | 旧格式兜底 |
-| JSON | `{"name":"x","arguments":{...}}` | JSON 块解析 |
-| XML | `<tool_call><function=NAME>...</function></tool_call>` | 原生 XML |
-| 混合 | `<function_call>{...}</function_call>` | XML+JSON |
+| Priority | Format | Description |
+|----------|--------|-------------|
+| DSML | `<\|
 
-### 容错能力
+DSML\|tool_calls><\|DSML\|invoke name="X">...</\|DSML\|invoke></\|DSML\|tool_calls>` | Primary format, tolerant of 7 noise variants |
+| TOOL_CALL | `TOOL_CALL: name(key=value)` | Legacy format fallback |
+| JSON | `{"name":"x","arguments":{...}}` | JSON block parsing |
+| XML | `<tool_call><function=NAME>...</function></tool_call>` | Native XML |
+| Mixed | `<function_call>{...}</function_call>` | XML+JSON |
 
-- **噪声容错** — 支持缺管道、重复 `<`、全宽 `｜`、连字符 `dsml-` 等 7 种变体
-- **围栏代码块** — 自动跳过 markdown 代码块内的 DSML 示例
-- **JSON 修复** — 未加引号 key、缺失数组括号自动修复
-- **CDATA 保护** — content/command/prompt 等参数保留原始字符串
-- **缺失开标签** — 有关闭标签无开头时自动补回
+### Fault Tolerance
 
+- **Noise tolerance** — Supports 7 variants including missing pipes, duplicate `<`, full-width `｜`, hyphen `dsml-`, etc.
+- **Fenced code blocks** — Automatically skips DSML examples inside markdown code blocks
+- **JSON repair** — Auto-fixes unquoted keys and missing array brackets
+- **CDATA protection** — Preserves raw strings for parameters like content/command/prompt
+- **Missing opening tags** — Auto-restores when closing tag exists without opening
 
-## PoW 求解机制
+## PoW Solving Mechanism
 
-DeepSeek 对 `/api/v0/chat/completion` 端点要求 **Proof of Work (PoW)** 验证。
+DeepSeek requires **Proof of Work (PoW)** verification for the `/api/v0/chat/completion` endpoint.
 
-### 流程
+### Flow
 
-1. 每次请求前调用 `POST /api/v0/chat/create_pow_challenge` 获取 challenge
-2. 求解 challenge → 得到 `x-ds-pow-response` header
-3. 将 solve 结果附加到聊天请求的 header 中
+1. Call `POST /api/v0/chat/create_pow_challenge` before each request to get a challenge
+2. Solve the challenge → obtain `x-ds-pow-response` header
+3. Attach the solve result to the chat request headers
 
-### 双求解器
+### Dual Solvers
 
-| 求解器 | 方式 | 速度 | 兼容性 |
-|--------|------|------|--------|
-| Node.js WASM | `node pow_solver.js` 子进程 | 快（秒级） | 算法与官方一致 |
-| Python 回退 | `hashlib.sha3_256` 纯 Python | 较慢 | 无 Node.js 时备用 |
+| Solver | Method | Speed | Compatibility |
+|--------|--------|-------|---------------|
+| Node.js WASM | `node pow_solver.js` subprocess | Fast (seconds) | Algorithm matches official |
+| Python Fallback | `hashlib.sha3_256` pure Python | Slower | Fallback when Node.js unavailable |
 
-需要 Node.js 安装 + `sha3_wasm_bg.wasm` 文件（已包含在项目中）。
+Requires Node.js installation + `sha3_wasm_bg.wasm` file (included in the project).
 
-### 算法
+### Algorithm
 
-DeepSeek 使用自定义算法 `DeepSeekHashV1`，本质是 SHA3-256 哈希碰撞。WASM 版（Node.js 调用）的算法与官方完全匹配。
+DeepSeek uses a custom algorithm `DeepSeekHashV1`, which is essentially SHA3-256 hash collision. The WASM version (called from Node.js) perfectly matches the official algorithm.
 
-## Token 自动刷新
+## Automatic Token Refresh
 
-Token 有效期约 **24 小时**。当请求返回 401 时：
+Token validity is approximately **24 hours**. When a request returns 401:
 
-1. 检测到 401 → 触发 `relogin()` 函数
-2. 用保存的密码重新调用 `POST /api/v0/users/login`
-3. 获取新 Token → 创建新 Session → 保存到 `token.json`
-4. 用新 Token **重试当前请求**（用户无感知）
+1. 401 detected → triggers `relogin()` function
+2. Uses saved password to call `POST /api/v0/users/login` again
+3. Gets new token → creates new session → saves to `token.json`
+4. **Retries current request** with the new token (transparent to user)
 
-> **前提：** 首次配置时必须通过**账号密码登录**方式。纯 cURL/Cookie 导入不含密码，无法自动刷新。
+> **Prerequisite:** Initial configuration must use **account password login**. Pure cURL/Cookie import does not contain a password and cannot auto-refresh.
 
-## 管理命令
+## Administration Commands
 
 ```bash
-# 前台运行
+# Run in foreground
 python3 proxy.py
 
-# 后台启动
+# Start in background
 ./deploy.sh --bg
 
-# 查看运行状态
+# Check running status
 ./deploy.sh --status
 
-# 停止后台进程
+# Stop background process
 ./deploy.sh --stop
 
-# 查看实时日志（后台运行时）
+# View real-time logs (when running in background)
 tail -f ~/dsapi.log
 
-# 指定端口
+# Specify port
 PROXY_PORT=9000 python3 proxy.py
 
-# 强制刷新模型列表
+# Force refresh model list
 curl -X POST http://localhost:8000/v1/models/refresh
 
-# 健康检查
+# Health check
 curl http://localhost:8000/health
 ```
 
-**启动后：**
+**After startup:**
 
-| 地址 | 说明 |
-|------|------|
-| `http://localhost:8000/admin` | Web 管理后台（登录配置） |
-| `http://localhost:8000/v1` | OpenAI 兼容 API 根路径 |
-| `http://localhost:8000/health` | 健康检查端点 |
+| Address | Description |
+|---------|-------------|
+| `http://localhost:8000/admin` | Web admin panel (login configuration) |
+| `http://localhost:8000/v1` | OpenAI-compatible API root path |
+| `http://localhost:8000/health` | Health check endpoint |
 
-## 项目结构
+## Project Structure
 
 ```
 ds-free-api/
-├── proxy.py              # 主程序：FastAPI 应用、SSE 解析、OpenAI 端点、管理面板
-├── response_store.py     # Responses API 本地持久化（JSON 文件）
-├── pow_native.py         # PoW 求解器：Node.js WASM 主求解 + Python 回退
-├── pow_solver.js         # Node.js PoW 求解脚本（调用 WASM）
-├── sha3_wasm_bg.wasm     # SHA3 WASM 二进制
-├── deploy.sh             # 一键部署脚本（安装依赖、启动/停止/状态管理）
-├── requirements.txt      # Python 依赖
-├── token.example.json    # 配置文件模板
-└── token.json            # 实际配置（.gitignore，含凭证）
+├── proxy.py              # Main program: FastAPI app, SSE parsing, OpenAI endpoints, admin panel
+├── response_store.py     # Responses API local persistence (JSON file)
+├── pow_native.py         # PoW solver: Node.js WASM primary solver + Python fallback
+├── pow_solver.js         # Node.js PoW solving script (calls WASM)
+├── sha3_wasm_bg.wasm     # SHA3 WASM binary
+├── deploy.sh             # One-click deployment script (install dependencies, start/stop/status management)
+├── requirements.txt      # Python dependencies
+├── token.example.json    # Configuration template
+└── token.json            # Actual configuration (.gitignore, contains credentials)
 ```
 
-### 核心文件说明
+### Core Files Description
 
-| 文件 | 职责 | 行数 |
-|------|------|------|
-| `proxy.py` | 应用入口、路由、SSE 解析、DeepSeek API 交互、Token 刷新、管理面板 UI | ~3770 |
-| `response_store.py` | Responses API 本地持久化（线程安全 JSON 文件读写） | ~73 |
-| `pow_native.py` | PoW 求解器（Node.js 子进程 + Python 纯算法回退） | ~124 |
-| `deploy.sh` | 一键部署（环境检查、依赖安装、启动/停止/状态） | ~198 |
+| File | Responsibility | Lines |
+|------|----------------|-------|
+| `proxy.py` | Application entry, routing, SSE parsing, DeepSeek API interaction, token refresh, admin panel UI | ~3770 |
+| `response_store.py` | Responses API local persistence (thread-safe JSON file read/write) | ~73 |
+| `pow_native.py` | PoW solver (Node.js subprocess + Python pure algorithm fallback) | ~124 |
+| `deploy.sh` | One-click deployment (environment check, dependency installation, start/stop/status) | ~198 |
 
-## 配置参考
+## Configuration Reference
 
-`token.json` 完整配置项：
+`token.json` Complete configuration items：
 
 ```json
 {
@@ -669,83 +674,83 @@ ds-free-api/
 }
 ```
 
-| 配置项 | 说明 | 自动生成 |
-|--------|------|:--------:|
-| `token` | Bearer Token（约24小时有效） | ✓ |
-| `session_id` | 聊天会话 ID（UUID） | ✓ |
-| `headers` | 请求头（含 UA、authorization 等） | ✓ |
-| `account` | 账号标识（显示用） | ✓ |
-| `login_type` | 登录方式：`phone` / `email` | 首次设置 |
-| `_password` | 登录密码（用于自动刷新） | 首次设置 |
-| `_mobile` | 手机号（自动刷新用） | 首次设置 |
-| `_email` | 邮箱（自动刷新用） | 首次设置 |
-| `_area_code` | 区号（默认 +86） | 首次设置 |
+| Configuration | Description | Auto-generated |
+|---------------|-------------|:--------------:|
+| `token` | Bearer Token (approx. 24-hour validity) | ✓ |
+| `session_id` | Chat session ID (UUID) | ✓ |
+| `headers` | Request headers (including UA, authorization, etc.) | ✓ |
+| `account` | Account identifier (for display) | ✓ |
+| `login_type` | Login method: `phone` / `email` | First-time setup |
+| `_password` | Login password (for auto-refresh) | First-time setup |
+| `_mobile` | Phone number (for auto-refresh) | First-time setup |
+| `_email` | Email (for auto-refresh) | First-time setup |
+| `_area_code` | Area code (default +86) | First-time setup |
 
-> **安全提示：** `_password` 明文存储在本地文件。请确保 `token.json` 权限正确（`chmod 600`），并在分发/打包时排除（已加入 `.gitignore`）。
+> **Security Note:** `_password` is stored in plain text in the local file. Ensure `token.json` has proper permissions (`chmod 600`) and is excluded when distributing/packaging (already added to `.gitignore`).
 
-**环境变量：** `PROXY_PORT` — 监听端口（默认 `8000`）
+**Environment Variable:** `PROXY_PORT` — Listening port (default `8000`)
 
-## 依赖
+## Dependencies
 
-### Python（pip）
+### Python (pip)
 
 ```bash
 pip install fastapi uvicorn curl-cffi python-dotenv
 ```
 
-| 依赖 | 用途 |
-|------|------|
-| `fastapi` | Web 框架 |
-| `uvicorn` | ASGI 服务器 |
-| `curl-cffi` | HTTP 客户端（模拟 Chrome TLS 指纹，绕过反爬） |
-| `python-dotenv` | 环境变量加载 |
+| Dependency | Purpose |
+|------------|---------|
+| `fastapi` | Web framework |
+| `uvicorn` | ASGI server |
+| `curl-cffi` | HTTP client (simulates Chrome TLS fingerprint, bypasses anti-scraping) |
+| `python-dotenv` | Environment variable loading |
 
-### 系统
+### System
 
-- **Node.js** — PoW 求解器（必需，安装 `pkg install nodejs` 或 `apt install nodejs`）
-- Python 3.10+ — 运行环境
+- **Node.js** — PoW solver (required, install with `pkg install nodejs` or `apt install nodejs`)
+- Python 3.10+ — Runtime environment
 
-## 限制与已知问题
+## Limitations & Known Issues
 
-| 限制 | 说明 |
-|------|------|
-| Token 有效期 | 约 24 小时过期，需要密码登录来自动刷新 |
-| 并发限制 | DeepSeek 免费版每账号限制约 2 并发请求 |
-| 仅 Chat Completions + Responses | 不支持 Embeddings、Fine-tuning 等端点 |
-| PoW 耗时 | 每次请求需要先获取并求解 PoW challenge（Node.js 约 1-3 秒） |
-| 非流式走 SSE | DeepSeek 只提供 SSE 流，非流式请求会缓冲全部 SSE 后合并返回 |
-| Vision 非流式 | Vision 模型在流式模式下无 content 输出，内部用非流式获取后包装为 SSE |
+| Limitation | Description |
+|------------|-------------|
+| Token validity | Expires in approx. 24 hours, requires password login for auto-refresh |
+| Concurrency limit | DeepSeek free tier limits ~2 concurrent requests per account |
+| Only Chat Completions + Responses | Does not support Embeddings, Fine-tuning, etc. |
+| PoW overhead | Each request requires fetching and solving PoW challenge (Node.js: ~1-3 seconds) |
+| Non-streaming via SSE | DeepSeek only provides SSE streams; non-streaming requests buffer all SSE and merge before returning |
+| Vision non-streaming | Vision models have no content output in streaming mode; internally uses non-streaming then wraps as SSE |
 
-## 常见问题
+## FAQ
 
-**Q: 启动后访问 /admin 显示空白？**
-A: 管理面板是内嵌在 `proxy.py` 中的单文件 HTML，检查是否有 JavaScript 报错（F12 Console）。确保直接访问 `http://localhost:8000/admin`。
+**Q: Admin page is blank after startup?**
+A: The admin panel is a single-file HTML embedded in `proxy.py`. Check for JavaScript errors (F12 Console). Ensure you're accessing `http://localhost:8000/admin` directly.
 
-**Q: 提示 "Update to the latest version to use Expert/Vision"？**
-A: `x-client-version` 需要与 DeepSeek 网页端保持一致（当前 `2.0.2`）。代理启动时已自动设置。
+**Q: Prompt says "Update to the latest version to use Expert/Vision"?**
+A: The `x-client-version` needs to match the DeepSeek web version (currently `2.0.2`). This is automatically set when the proxy starts.
 
-**Q: PoW 求解失败？**
-A: 检查 Node.js 是否安装（`node --version`）。如果 Node.js 求解失败，代理会自动回退到 Python 纯算法求解（较慢但无需外部依赖）。
+**Q: PoW solving fails?**
+A: Check if Node.js is installed (`node --version`). If Node.js solving fails, the proxy will automatically fall back to Python pure algorithm solving (slower but no external dependencies).
 
-**Q: 登录时提示密码错误？**
-A: 确认密码正确。DeepSeek 密码要求至少 8 位，含字母+数字。某些情况下可能需要先完成人机验证再试。
+**Q: Login says incorrect password?**
+A: Verify the password is correct. DeepSeek passwords require at least 8 characters, including letters and numbers. In some cases, you may need to complete a CAPTCHA verification first.
 
-**Q: Token 过期后怎么办？**
-A: 如果使用**账号密码登录**配置的，代理会在 401 时自动重新登录刷新 Token。如果使用 cURL/Cookie 导入的，需要手动重新导入。
+**Q: What happens when the token expires?**
+A: If configured via **account password login**, the proxy will automatically re-login and refresh the token on 401. If imported via cURL/Cookie, you'll need to manually re-import.
 
-**Q: 指定 expert 模型但对话记录显示在"快速模式"（default）？**
-A: 通常是 Token 或 Session 过期导致的。DeepSeek 在凭证失效时会把请求降级到 default 模型。解决方法：在管理面板 `http://localhost:8000/admin` 用手机号/邮箱**重新登录**一次即可，登录后自动刷新 Token 和 Session。
+**Q: I specified an expert model but the conversation history shows "Fast Mode" (default)?**
+A: This usually indicates token or session expiration. When credentials expire, DeepSeek downgrades the request to the default model. Solution: On the admin panel at `http://localhost:8000/admin`, **re-login** using your phone/email. After login, the token and session will be automatically refreshed.
 
-**Q: 可以部署到服务器公网访问吗？**
-A: 可以，但建议使用 Nginx 反向代理 + HTTPS + IP 白名单。API Key 不校验（任意值即可），需要通过其他方式控制访问。
+**Q: Can I deploy this to a public server?**
+A: Yes, but it's recommended to use Nginx reverse proxy + HTTPS + IP whitelisting. API keys are not validated (any value works), so access control should be managed through other means.
 
-## 许可与致谢
+## License & Acknowledgments
 
 MIT License
 
-**参考项目：**
-- [NIyueeE/ds-free-api](https://github.com/NIyueeE/ds-free-api) — Rust 原版，提供了 DeepSeek API 逆向思路和 PoW 算法参考
-- [CJackHwang/ds2api](https://github.com/CJackHwang/ds2api) — DSML 工具调用格式、流式筛分架构、DeepSeek 原生对话标记 均参考此项目
-- [GoblinHonest/mimo2api_mimoapi](https://github.com/GoblinHonest/mimo2api_mimoapi) — 会话管理（消息指纹续接、token 超限自动清屏）设计参考
-- [Acidmoon](https://github.com/Acidmoon) — 提交 PR #2，实现 OpenAI Responses API 兼容层
-- [xstjmark21-cmyk](https://github.com/xstjmark21-cmyk) — 为 Vision 功能修改测试提供模型Token算力
+**Reference Projects:**
+- [NIyueeE/ds-free-api](https://github.com/NIyueeE/ds-free-api) — Rust original, provided DeepSeek API reverse engineering ideas and PoW algorithm reference
+- [CJackHwang/ds2api](https://github.com/CJackHwang/ds2api) — DSML tool calling format, streaming sieve architecture, and DeepSeek native conversation markers referenced from this project
+- [GoblinHonest/mimo2api_mimoapi](https://github.com/GoblinHonest/mimo2api_mimoapi) — Session management (message fingerprint continuation, auto-clear on token overflow) design referenced
+- [Acidmoon](https://github.com/Acidmoon) — Submitted PR #2, implementing OpenAI Responses API compatibility layer
+- [xstjmark21-cmyk](https://github.com/xstjmark21-cmyk) — Provided model tokens and computing power for testing Vision feature modifications
