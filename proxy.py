@@ -1428,7 +1428,7 @@ async def _run_background_response(source_request: Request, body: dict, chat_bod
 
     update_response_record(response_id, finish)
 
-# ── cURL 解析 ──────────────────────────────────────────
+# ── cURL Parse ──────────────────────────────────────────
 def parse_curl(curl: str) -> dict:
     try:
         tokens = shlex.split(curl)
@@ -1717,8 +1717,8 @@ try{
 const r=await fetch('/api/accounts');const d=await r.json();
 var h='';
 if(d.accounts&&d.accounts.length>0){
-Q('acctStat').innerHTML='共 '+d.total+' account(s), '+d.valid+' active';
-h+='<table class="acct-tbl"><tr><th>Account</th><th>状态</th><th>Token</th><th>Login time</th><th>Actions</th></tr>';
+Q('acctStat').innerHTML='Total '+d.total+' account(s), '+d.valid+' active';
+h+='<table class="acct-tbl"><tr><th>Account</th><th>Status</th><th>Token</th><th>Login time</th><th>Actions</th></tr>';
 for(var a of d.accounts){
 var st=a.is_valid?'ok':'no';
 var stT=a.is_valid?'Active / Valid':'Not logged in';
@@ -1735,35 +1735,35 @@ async function addAccount(){
 var phone=Q('acctPhone').value.trim();
 var code=Q('acctCode').value.trim()||'+86';
 var pw=Q('acctPw').value;
-if(!phone||!pw){t('请输入手机号和密码',1);return}
+if(!phone||!pw){t('Please enter your phone number and password',1);return}
 try{
 var r=await fetch('/api/accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mobile:phone,area_code:code,password:pw,login_type:'phone'})});
 var d=await r.json();
-if(d.ok){t('已添加，需登录获取token');Q('acctPhone').value='';Q('acctPw').value='';loadAccounts()}
-else{t('失败: '+(d.error||'未知错误'),1)}
-}catch(e){t('添加失败: '+e.message,1)}
+if(d.ok){t('Added, login required to obtain token');Q('acctPhone').value='';Q('acctPw').value='';loadAccounts()}
+else{t('Failed: '+(d.error||'Unknown error'),1)}
+}catch(e){t('Add failed: '+e.message,1)}
 }
 async function removeAccount(label){
-if(!confirm('确定删除账号 '+decodeURIComponent(label)+'？'))return;
+if(!confirm('Confirm delete account '+decodeURIComponent(label)+'？'))return;
 try{
 var r=await fetch('/api/accounts/'+label,{method:'DELETE'});
 var d=await r.json();
-if(d.ok){t('已删除');loadAccounts()}
-else{t('删除失败: '+(d.error||'未知错误'),1)}
-}catch(e){t('删除失败: '+e.message,1)}
+if(d.ok){t('Deleted');loadAccounts()}
+else{t('Delete failed: '+(d.error||'Unknown error'),1)}
+}catch(e){t('Delete failed: '+e.message,1)}
 }
 async function reloginAccount(label){
 var btn=event&&event.target;if(btn){btn.disabled=true;btn.textContent='...'}
 try{
 var r=await fetch('/api/accounts/'+label+'/relogin',{method:'POST'});
 var d=await r.json();
-if(d.ok){t('重新登录成功');loadAccounts()}
-else{t('重登失败: '+(d.error||'未知错误'),1)}
-}catch(e){t('重登失败: '+e.message,1)}
-if(btn){btn.disabled=false;btn.textContent='重登'}
+if(d.ok){t('Re-login successful');loadAccounts()}
+else{t('Re-login failed: '+(d.error||'Unknown error'),1)}
+}catch(e){t('Re-login failed: '+e.message,1)}
+if(btn){btn.disabled=false;btn.textContent='Re-login'}
 }
 async function reloginAll(){
-var btn=event&&event.target;if(btn){btn.disabled=true;btn.textContent='登录中...'}
+var btn=event&&event.target;if(btn){btn.disabled=true;btn.textContent='Logging in...'}
 try{
 var r=await fetch('/api/accounts/relogin-all',{method:'POST'});
 var d=await r.json();
@@ -1771,16 +1771,16 @@ if(d.results){
 var ok=d.results.filter(x=>x.ok).length;
 t('Re-login completed: '+ok+'/'+d.total+' Success');
 loadAccounts();
-}else{t('失败: '+(d.error||'未知'),1)}
+}else{t('Failed: '+(d.error||'Unknown'),1)}
 }catch(e){t('Re-login failed: '+e.message,1)}
 if(btn){btn.disabled=false;btn.textContent='Log out and log back in completely'}
 }
 async function cleanupSessions(){
-var btn=event&&event.target;if(btn){btn.disabled=true;btn.textContent='清理中...'}
+var btn=event&&event.target;if(btn){btn.disabled=true;btn.textContent='Cleaning up...'}
 try{
 var r=await fetch('/api/cleanup',{method:'POST'});
 var d=await r.json();
-t(d.ok?d.msg:'Cleanup failed: '+(d.msg||'未知'),d.ok?0:1)
+t(d.ok?d.msg:'Cleanup failed: '+(d.msg||'Unknown'),d.ok?0:1)
 }catch(e){t('Cleanup failed: '+e.message,1)}
 if(btn){btn.disabled=false;btn.textContent='Clear expired sessions'}
 }
@@ -1805,8 +1805,8 @@ _up=p;
 loadUsage()
 }
 async function clearUsage(){
-if(!confirm('确定清空全部用量数据？'))return;
-try{await fetch('/api/usage',{method:'DELETE'});t('已清空');loadUsage()}catch(e){t('清空失败',1)}
+if(!confirm('Confirm clear all usage data?'))return;
+try{await fetch('/api/usage',{method:'DELETE'});t('Cleared');loadUsage()}catch(e){t('Clear failed',1)}
 }
 cs()
 </script>
@@ -1835,7 +1835,7 @@ async def admin():
 # ── 配置 API ─────────────────────────────────────────────
 
 def _load_config_sync() -> dict:
-    """同步加载配置信息（兼容旧接口）。多账号模式下取第一个有效账号。"""
+    """Synchronously load configuration information (compatible with legacy interface). In multi-account mode, the first valid account is used."""
     accounts = config_manager.get_all_accounts()
     if not accounts:
         return {}
@@ -1866,12 +1866,12 @@ async def get_config():
 @app.post("/api/config")
 async def save_config(data: dict):
     curl = data.get("curl", "").strip()
-    if not curl: raise HTTPException(400, "请提供 cURL")
+    if not curl: raise HTTPException(400, "Please provide cURL")
     parsed = parse_curl(curl)
     cfg = build_config(parsed)
     if not cfg["token"]: return {"ok": False, "error": "Token not extracted from cURL, please verify the Authorization header"}
     if not cfg["session_id"]: return {"ok": False, "error": "Session ID not extracted from cURL"}
-    # 创建账号并加入池
+    # Create account and add to pool
     account_label = f"curl_import_{cfg['token'][:8]}"
     ds_account = DsAccount(
         account_label=account_label,
@@ -1888,15 +1888,15 @@ async def save_config(data: dict):
     return {"ok": True, "masked": t[:20] + "..." + t[-8:], "session_id": cfg["session_id"], "account_label": account_label}
 
 
-# ── DeepSeek 登录 API ─────────────────────────────────────
+# ── DeepSeek Login API ─────────────────────────────────────
 @app.post("/api/login")
 async def deepseek_login(data: dict):
     login_type = data.get("login_type", "phone")
     password = data.get("password", "").strip()
     if not password:
-        raise HTTPException(400, "请提供密码")
+        raise HTTPException(400, "Please provide password")
 
-    # 构造登录 payload（参考 NIyueeE/ds-free-api: email 和 mobile 二选一）
+    # Construct login payload (reference NIyueeE/ds-free-api: choose either email or mobile)
     login_payload = {"password": password, "device_id": secrets.token_hex(16), "os": "web"}
     account_label = ""
     email, mobile, area_code = "", "", "+86"
@@ -1904,7 +1904,7 @@ async def deepseek_login(data: dict):
     if login_type == "email":
         email = data.get("email", "").strip()
         if not email:
-            raise HTTPException(400, "请提供邮箱")
+            raise HTTPException(400, "Please provide email")
         login_payload["email"] = email
         login_payload["mobile"] = ""
         login_payload["area_code"] = ""
@@ -1913,7 +1913,7 @@ async def deepseek_login(data: dict):
         mobile = data.get("mobile", "").strip()
         area_code = data.get("area_code", "+86").strip()
         if not mobile:
-            raise HTTPException(400, "请提供手机号")
+            raise HTTPException(400, "Please provide phone number")
         login_payload["mobile"] = mobile
         login_payload["area_code"] = area_code
         login_payload["email"] = ""
@@ -1929,7 +1929,7 @@ async def deepseek_login(data: dict):
     }
 
     try:
-        # 1. 登录
+        # 1. Login
         login_resp = cffi_requests.post(
             "https://chat.deepseek.com/api/v0/users/login",
             json=login_payload,
@@ -1946,16 +1946,16 @@ async def deepseek_login(data: dict):
 
         if login_resp.status_code != 200 or outer_code != 0 or biz_code != 0:
             err_msg = biz_msg or login_data.get("msg") or f"HTTP {login_resp.status_code}/code={outer_code}/biz_code={biz_code}"
-            return {"ok": False, "error": f"登录失败: {err_msg}"}
+            return {"ok": False, "error": f"Login failed: {err_msg}"}
 
         biz_data = data_block.get("biz_data") or {}
         token = biz_data.get("user", {}).get("token", "")
         if not token:
-            return {"ok": False, "error": f"登录失败: biz_data 中无 token（biz_msg={biz_msg}）"}
+            return {"ok": False, "error": f"Login failed: token not found in biz_data (biz_msg={biz_msg})"}
 
         print(f"[Login] Token acquired for {account_label}: {token[:20]}...{token[-8:]}")
 
-        # 2. 创建会话
+        # 2. Create session
         auth_headers = {**DS_HEADERS, "authorization": f"Bearer {token}"}
         session_resp = cffi_requests.post(
             "https://chat.deepseek.com/api/v0/chat_session/create",
@@ -1974,7 +1974,7 @@ async def deepseek_login(data: dict):
         else:
             print(f"[Login] Session creation failed: {session_resp.status_code} {session_resp.text[:200]}")
 
-        # 3. 保存配置（含凭证供自动刷新）
+        # 3. Save configuration (includes credentials for auto-refresh)
         cfg = {
             "token": token,
             "session_id": session_id,
@@ -1982,13 +1982,13 @@ async def deepseek_login(data: dict):
             "cookie": "",
             "account": account_label,
             "login_type": login_type,
-            # 保存凭证用于 token 过期后自动刷新
+            # Save credentials for automatic refresh after token expiration
             "_password": password,
             "_email": email if login_type == "email" else "",
             "_mobile": mobile if login_type == "phone" else "",
             "_area_code": area_code if login_type == "phone" else "+86",
         }
-        # 添加到多账号池
+        # Add to multi-account pool
         ds_account = DsAccount(
             account_label=account_label,
             login_type=login_type,
@@ -2020,11 +2020,11 @@ async def health():
     return {"status": "ok" if valid else "waiting", "configured": valid > 0, "accounts": total, "valid": valid}
 
 
-# ─── 账号管理 API ───────────────────────────────────────────
+# ─── Account Management API ───────────────────────────────────────────
 
 @app.get("/api/accounts")
 async def list_accounts():
-    """获取所有账号列表"""
+    """Get all account list"""
     return {
         "accounts": config_manager.get_all_accounts(),
         "total": config_manager.count(),
@@ -2034,22 +2034,22 @@ async def list_accounts():
 
 @app.post("/api/accounts")
 async def add_account(data: dict):
-    """手动添加账号"""
+    """Manually add account"""
     login_type = data.get("login_type", "phone")
     password = data.get("password", "").strip()
     if not password:
-        raise HTTPException(400, "请提供密码")
+        raise HTTPException(400, "Please provide password")
 
     if login_type == "email":
         email = data.get("email", "").strip()
         if not email:
-            raise HTTPException(400, "请提供邮箱")
+            raise HTTPException(400, "Please provide email")
         account_label = email
     else:
         mobile = data.get("mobile", "").strip()
         area_code = data.get("area_code", "+86").strip()
         if not mobile:
-            raise HTTPException(400, "请提供手机号")
+            raise HTTPException(400, "Please provide phone number")
         account_label = f"{area_code} {mobile}"
 
     existing = config_manager.get_account_by_label(account_label)
@@ -2075,27 +2075,27 @@ async def add_account(data: dict):
 
 @app.delete("/api/accounts/{account_label}")
 async def remove_account(account_label: str):
-    """删除账号"""
+    """Delete account"""
     from urllib.parse import unquote
     label = unquote(account_label)
     if config_manager.remove_account(label):
         return {"ok": True, "account_label": label}
-    raise HTTPException(404, f"账号 {label} 不存在")
+    raise HTTPException(404, f"Account {label} does not exist")
 
 
 @app.post("/api/accounts/{account_label}/relogin")
 async def relogin_account(account_label: str):
-    """重新登录指定账号"""
+    """Re-login specified account"""
     from urllib.parse import unquote
     label = unquote(account_label)
     account = config_manager.get_account_by_label(label)
     if not account:
-        raise HTTPException(404, f"账号 {label} 不存在")
+        raise HTTPException(404, f"Account {label} does not exist")
 
     login_type = account.login_type
     password = account._password
     if not password:
-        raise HTTPException(400, f"账号 {label} 无保存密码，无法自动登录")
+        raise HTTPException(400, f"Account {label} has no saved password, cannot auto-login")
 
     cfg = {
         "login_type": login_type,
@@ -2109,19 +2109,19 @@ async def relogin_account(account_label: str):
     new_cfg = relogin(cfg)
     if new_cfg:
         return {"ok": True, "account_label": label, "token_masked": new_cfg.get("token", "")[:20] + "..."}
-    return {"ok": False, "error": "重新登录失败"}
+    return {"ok": False, "error": "Re-login failed"}
 
 
 @app.post("/api/accounts/relogin-all")
 async def relogin_all():
-    """重新登录所有有效账号"""
+    """Re-login all valid accounts"""
     accounts = config_manager.get_all_accounts()
     results = []
     for acc in accounts:
         label = acc.get("account_label", "")
         account = config_manager.get_account_by_label(label)
         if not account or not account._password:
-            results.append({"label": label, "ok": False, "error": "无密码"})
+            results.append({"label": label, "ok": False, "error": "No password"})
             continue
 
         cfg = {
@@ -2133,12 +2133,12 @@ async def relogin_all():
             "account": label,
         }
         new_cfg = relogin(cfg)
-        results.append({"label": label, "ok": bool(new_cfg), "error": None if new_cfg else "登录失败"})
+        results.append({"label": label, "ok": bool(new_cfg), "error": None if new_cfg else "Login failed"})
 
     return {"results": results, "total": len(results), "success": sum(1 for r in results if r["ok"])}
 
 
-# ─── 用量统计 API ─────────────────────────────────────────────
+# ─── Usage Statistics API ─────────────────────────────────────────────
 
 @app.get("/api/usage")
 async def usage_stats():
@@ -2153,34 +2153,34 @@ async def clear_usage_stats():
 
 @app.post("/api/cleanup")
 async def manual_cleanup():
-    """手动触发会话清理。"""
+    """Manually trigger session cleanup."""
     try:
         cleanup_old_sessions()
-        return {"ok": True, "msg": "清理完成"}
+        return {"ok": True, "msg": "Cleanup completed"}
     except Exception as e:
         return {"ok": False, "msg": str(e)}
 
 
-# ─── 模型列表（免鉴权，供管理页面使用） ───────────────────────
+# ─── Model list (no authentication required, for management page use) ───────────────────────
 
 @app.get("/api/models")
 async def admin_models():
     return {"models": list(get_models().keys())}
 
 
-# ── 模型映射（动态从 DeepSeek 探测）─────────────────
+# ── Model mapping (dynamically detected from DeepSeek) ─────────────────
 MODEL_CONFIG_URL = "https://chat.deepseek.com/api/v0/client/settings?scope=model"
 
 _models_cache = {}       # model_id → (thinking, search, max_in, max_out)
 _models_cache_time = 0
-_MODELS_TTL = 3600       # 缓存1小时
+_MODELS_TTL = 3600       # Cached for 1 hour
 
 
 def _discover_models() -> dict:
-    """从 DeepSeek /api/v0/client/settings?scope=model 动态获取模型配置。
+    """Dynamically fetch model configuration from DeepSeek /api/v0/client/settings?scope=model.
 
-    返回: {model_id: (thinking_enabled, search_enabled, max_input, max_output), ...}
-    失败返回 None。
+    Returns: {model_id: (thinking_enabled, search_enabled, max_input, max_output), ...}
+    Returns None on failure.
     """
     global _models_cache, _models_cache_time
 
@@ -2215,39 +2215,39 @@ def _discover_models() -> dict:
             if not mt or not mc.get("enabled"):
                 continue
 
-            # 上下文大小：优先从 input_character_limit 推算 (V4 系列 ≈ 1M tokens)，
-            # 对 Expert 等 UI 限制偏小的模型硬编码 1M
+            # Context size: prioritize calculating from input_character_limit (V4 series ≈ 1M tokens),
+            # hardcode 1M for models like Expert where UI limit is set too small
             icl = mc.get("input_character_limit", 0) or 0
             if icl >= 1_000_000:
                 max_in = int(icl * 0.4)      # 2621440 × 0.4 ≈ 1048576 (1M)
             else:
-                max_in = 1_048_576            # Expert 等硬编码 1M
-            max_out = max_in                  # DeepSeek V4 输出上限即上下文大小
+                max_in = 1_048_576            # Expert etc. hardcoded to 1M
+            max_out = max_in                  # DeepSeek V4 Output limit equals context size
             has_think = mc.get("think_feature") is not None
             has_search = mc.get("search_feature") is not None
 
-            # 基础模型
+            # Base model
             name = f"deepseek-{mt}" if mt != "default" else "deepseek-default"
             models[name] = (False, False, max_in, max_out)
             print(f"[Model discovery]   {name}: in={max_in}, out={max_out}, think={has_think}, search={has_search}")
 
-            # 思维链变体
+            # Reasoning variant
             if has_think:
                 tname = "deepseek-reasoner" if mt == "default" else f"deepseek-{mt}-reasoner"
                 models[tname] = (True, False, max_in, max_out)
 
-            # 搜索变体
+            # Search variant
             if has_search:
                 sname = "deepseek-search" if mt == "default" else f"deepseek-{mt}-search"
                 models[sname] = (False, True, max_in, max_out)
 
-            # 思考+联网 组合变体
+            # Reasoning + search combined variant
             if has_think and has_search:
                 cname = "deepseek-reasoner-search" if mt == "default" else f"deepseek-{mt}-reasoner-search"
                 models[cname] = (True, True, max_in, max_out)
 
         if models:
-            # 模型名称为纯英文ID，中文对照见 README.md
+            # Model names are pure English IDs; see README.md for Chinese equivalents
             _models_cache = models
             _models_cache_time = time.time()
             print(f"[Model discovery] discovered {len(models)} models: {list(models.keys())}")
@@ -2260,7 +2260,7 @@ def _discover_models() -> dict:
 
 
 def get_models() -> dict:
-    """获取模型映射（缓存优先，过期自动刷新。发现失败返回 {}）。"""
+    """Get model mapping (cache first, auto-refresh on expiration. Returns {} on failure)."""
     global _models_cache, _models_cache_time
 
     if _models_cache and time.time() - _models_cache_time < _MODELS_TTL:
@@ -2270,18 +2270,18 @@ def get_models() -> dict:
     if discovered:
         return discovered
 
-    # 探测失败 → 返回空（不骗人）
+    # Detection failed → return empty (no deception)
     print("[Model discovery] Detection failed, model list is empty")
     return {}
 
 
-# ── Token 自动刷新 ─────────────────────────────────────────
+# ── Token Auto-refresh ─────────────────────────────────────────
 def relogin(cfg: dict) -> dict | None:
-    """用保存的凭证重新登录，返回新 cfg 或 None"""
+    """Re-login using saved credentials, returns new cfg or None"""
     login_type = cfg.get("login_type", "")
     password = cfg.get("_password", "")
     if not password:
-        print("[Token] 无保存密码，无法自动刷新")
+        print("[Token] No saved password, cannot auto-refresh")
         return None
 
     login_payload = {"password": password, "device_id": secrets.token_hex(16), "os": "web"}
@@ -2315,7 +2315,7 @@ def relogin(cfg: dict) -> dict | None:
     }
 
     try:
-        print(f"[Token] 自动重新登录 {account_label}...")
+        print(f"[Token] Auto re-login {account_label}...")
         login_resp = cffi_requests.post(
             "https://chat.deepseek.com/api/v0/users/login",
             json=login_payload,
@@ -2331,18 +2331,18 @@ def relogin(cfg: dict) -> dict | None:
 
         if login_resp.status_code != 200 or outer_code != 0 or biz_code != 0:
             err_msg = biz_msg or login_data.get("msg") or f"HTTP {login_resp.status_code}/code={outer_code}/biz_code={biz_code}"
-            print(f"[Token] 自动登录失败: {err_msg}")
+            print(f"[Token] Auto-login failed: {err_msg}")
             return None
 
         biz_data = data_block.get("biz_data") or {}
         token = biz_data.get("user", {}).get("token", "")
         if not token:
-            print(f"[Token] 登录失败: biz_data 中无 token（biz_msg={biz_msg}）")
+            print(f"[Token] Login failed: token not found in biz_data (biz_msg={biz_msg}) ")
             return None
 
-        print(f"[Token] 新 token: {token[:20]}...{token[-8:]}")
+        print(f"[Token] New token: {token[:20]}...{token[-8:]}")
 
-        # 创建新会话
+        # Create new session
         auth_headers = {**DS_HEADERS, "authorization": f"Bearer {token}"}
         session_resp = cffi_requests.post(
             "https://chat.deepseek.com/api/v0/chat_session/create",
