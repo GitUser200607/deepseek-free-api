@@ -1484,9 +1484,9 @@ app.include_router(_anthropic_router)
 @app.on_event("startup")
 async def startup_discover():
     """启动时自动刷新模型列表，延迟清理过期会话（后台线程，避免风控）。"""
-    print("[启动] 探测模型列表...")
+    print("[Start] Detecting model list...")
     _discover_models()
-    print("[启动] 后台清理过期会话...")
+    print("[Start] Cleaning expired sessions in background...")
     import threading
     threading.Thread(target=cleanup_old_sessions, daemon=True).start()
 
@@ -1578,31 +1578,31 @@ a{color:#7dd3fc}
 <div id="s" class="s no"><span id="sd" class="d dy"></span><span id="st">等待配置</span></div>
 
 <div class="tab-bar">
-<div class="tab active" onclick="switchTab('phone')">手机号登录</div>
-<div class="tab" onclick="switchTab('email')">邮箱登录</div>
-<div class="tab" onclick="switchTab('usage')">用量统计</div>
-<div class="tab" onclick="switchTab('accounts')">账号管理</div>
+<div class="tab active" onclick="switchTab('phone')">Phone</div>
+<div class="tab" onclick="switchTab('email')">E-Mail</div>
+<div class="tab" onclick="switchTab('usage')">Usage Statistics</div>
+<div class="tab" onclick="switchTab('accounts')">Accounts</div>
 </div>
 
 <div id="phonePanel" class="panel active">
 <div class="row">
 <input class="ac" type="tel" id="area_code" value="+86" placeholder="+86">
-<input class="ph" type="tel" id="mobile" placeholder="手机号" autocomplete="tel">
+<input class="ph" type="tel" id="mobile" placeholder="Mobile" autocomplete="tel">
 </div>
-<div class="pw-row"><input type="password" id="pw1" placeholder="密码" autocomplete="current-password"></div>
-<button class="btn bp" id="btn1" onclick="doLogin('phone')">登录</button>
+<div class="pw-row"><input type="password" id="pw1" placeholder="Password" autocomplete="current-password"></div>
+<button class="btn bp" id="btn1" onclick="doLogin('phone')">Login</button>
 </div>
 
 <div id="emailPanel" class="panel">
-<div class="pw-row"><input type="email" id="email" placeholder="邮箱地址" autocomplete="email"></div>
-<div class="pw-row"><input type="password" id="pw2" placeholder="密码" autocomplete="current-password"></div>
-<button class="btn bp" id="btn2" onclick="doLogin('email')">登录</button>
+<div class="pw-row"><input type="email" id="email" placeholder="E-Mail" autocomplete="email"></div>
+<div class="pw-row"><input type="password" id="pw2" placeholder="Password" autocomplete="current-password"></div>
+<button class="btn bp" id="btn2" onclick="doLogin('email')">Login</button>
 </div>
 
 <div class="info" id="info"></div>
 
 <div id="apiSection">
-<div class="collapse" onclick="toggleCurl()">高级: 手动粘贴 cURL ▾</div>
+<div class="collapse" onclick="toggleCurl()">Advanced: Manually paste cURL ▾</div>
 <div class="curl-box" id="curlBox">
 <textarea id="curl" placeholder="粘贴 cURL ..." style="width:100%;height:120px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:12px;font-family:monospace;font-size:11px;resize:vertical;margin-top:8px"></textarea>
 <button class="btn bp" id="btn3" onclick="saveCurl()" style="margin-top:8px">保存 cURL</button>
@@ -1610,15 +1610,15 @@ a{color:#7dd3fc}
 
 <hr>
 <div class="step">
-<div class="sl" style="font-weight:600;color:#e2e8f0;">API 配置</div>
+<div class="sl" style="font-weight:600;color:#e2e8f0;">API Configuration</div>
 <div class="cfg">
-<div class="cr"><span>API 地址</span><code onclick="cp(this)">http://localhost:""" + str(PROXY_PORT) + """/v1</code></div>
-<div class="cr"><span>API Key</span><code onclick="cp(this)">任意填写</code></div>
+<div class="cr"><span>API URL</span><code onclick="cp(this)">http://localhost:""" + str(PROXY_PORT) + """/v1</code></div>
+<div class="cr"><span>API Key</span><code onclick="cp(this)">Any value / Leave blank</code></div>
 
 </div>
 </div>
 <div class="step" style="margin-top:16px">
-<button class="btn" style="background:#334155;color:#e2e8f0;width:100%;font-size:13px" onclick="refreshModels()" id="refreshBtn">🔄 刷新模型列表</button>
+<button class="btn" style="background:#334155;color:#e2e8f0;width:100%;font-size:13px" onclick="refreshModels()" id="refreshBtn">🔄 Refresh Model List</button>
 <div id="modelsInfo" style="margin-top:8px;font-size:12px;color:#64748b;display:none"></div>
 </div>
 </div>
@@ -1626,20 +1626,20 @@ a{color:#7dd3fc}
 <div id="usagePanel" class="panel">
 <div id="usageContent"></div>
 <div style="margin-top:14px">
-<button class="pb ac" onclick="switchPeriod('total')" id="pbTotal">全部</button>
-<button class="pb" onclick="switchPeriod('week')" id="pbWeek">本周</button>
-<button class="pb" onclick="switchPeriod('today')" id="pbToday">今日</button>
-<button class="btn" style="background:#334155;color:#e2e8f0;font-size:12px;padding:6px 12px;margin-left:8px" onclick="loadUsage()">刷新</button>
-<button class="btn" style="background:#7f1d1d;color:#fca5a5;font-size:12px;padding:6px 12px;margin-left:4px" onclick="clearUsage()">清空</button>
+<button class="pb ac" onclick="switchPeriod('total')" id="pbTotal">All</button>
+<button class="pb" onclick="switchPeriod('week')" id="pbWeek">This week</button>
+<button class="pb" onclick="switchPeriod('today')" id="pbToday">Today</button>
+<button class="btn" style="background:#334155;color:#e2e8f0;font-size:12px;padding:6px 12px;margin-left:8px" onclick="loadUsage()">Refresh</button>
+<button class="btn" style="background:#7f1d1d;color:#fca5a5;font-size:12px;padding:6px 12px;margin-left:4px" onclick="clearUsage()">Clear</button>
 </div>
 </div>
 
 <div id="accountsPanel" class="panel">
-<div class="acct-stat" id="acctStat">加载中...</div>
+<div class="acct-stat" id="acctStat">Loading...</div>
 
-<div id="acctList"><div class="acct-empty">暂无账号，请先添加</div></div>
-<button class="acct-btn batch" onclick="reloginAll()">全部重新登录</button>
-<button class="acct-btn batch" onclick="cleanupSessions()" style="background:#7c3aed;color:#fff">清理过期会话</button>
+<div id="acctList"><div class="acct-empty">No account, please add first</div></div>
+<button class="acct-btn batch" onclick="reloginAll()">Relogin All</button>
+<button class="acct-btn batch" onclick="cleanupSessions()" style="background:#7c3aed;color:#fff">Clean expired sessions</button>
 </div>
 </div>
 <div id="toast" class="toast"></div>
@@ -1727,9 +1727,9 @@ h+='<tr><td>'+a.account_label+'</td><td><span class="acct-st '+st+'"></span>'+st
 h+=`<td><button class="acct-btn rl" onclick="reloginAccount('${l}')">重登</button><br><button class="acct-btn rm" onclick="removeAccount('${l}')">删除</button></td>`;
 }
 h+='</table>';
-}else{h='<div class="acct-empty">暂无账号，请在上方添加</div>'}
+}else{h='<div class="acct-empty">No accounts, please add one above</div>'}
 Q('acctList').innerHTML=h;
-}catch(e){Q('acctList').innerHTML='<div class="acct-empty">加载失败: '+e.message+'</div>'}
+}catch(e){Q('acctList').innerHTML='<div class="acct-empty">Loading failed: '+e.message+'</div>'}
 }
 async function addAccount(){
 var phone=Q('acctPhone').value.trim();
@@ -1792,7 +1792,7 @@ try{
 const r=await fetch('/api/usage');const d=await r.json();
 const p=d[_up]||d.total||{};const m=p.models||{};const t=p.total||{};
 const e=Object.entries(m).sort((a,b)=>b[1].total_tokens-a[1].total_tokens);
-if(!e.length&&!t.requests){Q('usageContent').innerHTML='<div class=ue>📊 暂无用量数据</div>';return}
+if(!e.length&&!t.requests){Q('usageContent').innerHTML='<div class=ue>📊 No usage data yet</div>';return}
 let h='<div class=us><table class=ut><thead><tr><th class=ml>模型</th><th>请求</th><th>输入</th><th>输出</th><th>总计</th></tr></thead><tbody>';
 for(const[k,v]of e){h+=`<tr><td class=ml>${k}</td><td>${f(v.requests)}</td><td>${f(v.prompt_tokens)}</td><td>${f(v.completion_tokens)}</td><td>${f(v.total_tokens)}</td></tr>`}
 h+=`<tr class=tr><td class=ml>📋 合计</td><td>${f(t.requests)}</td><td>${f(t.prompt_tokens)}</td><td>${f(t.completion_tokens)}</td><td>${f(t.total_tokens)}</td></tr></tbody></table></div>`;
@@ -1852,7 +1852,7 @@ def _load_config_sync() -> dict:
 async def get_config():
     accounts = config_manager.get_all_accounts()
     if not accounts:
-        return {"configured": False, "error": "未配置"}
+        return {"configured": False, "error": "Not configured"}
     first = accounts[0]
     return {
         "configured": True,
